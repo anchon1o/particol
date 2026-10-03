@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="gl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -382,6 +382,7 @@ header .brand > span:not(.logo-slot){font-weight:800;letter-spacing:-.02em}
   <symbol id="i-mrep" viewBox="0 0 24 24"><path d="M6 18L18 6" stroke-width="3"/><circle cx="7" cy="8" r="1.8" fill="currentColor"/><circle cx="17" cy="16" r="1.8" fill="currentColor"/></symbol>
   <symbol id="i-pen" viewBox="0 0 24 24"><path d="M14 4l6 6-9.5 9.5L4 21l1.5-6.5Z"/><path d="M12 6l6 6M5.5 14.5l4 4"/></symbol>
   <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.3 9.2 4.5 4.5 0 0 0 7 18Z"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 3.9 5.8 3.9 9s-1.3 6.2-3.9 9c-2.6-2.8-3.9-5.8-3.9-9S9.4 5.8 12 3Z"/></symbol>
   <symbol id="i-ear" viewBox="0 0 24 24"><path d="M6 8.5a6 6 0 1 1 12 0c0 3.5-3 4.5-3 7.5a3.5 3.5 0 0 1-6.6 1.6"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-1.5 2-1.5 3"/></symbol>
 </svg>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -398,7 +399,7 @@ header .brand > span:not(.logo-slot){font-weight:800;letter-spacing:-.02em}
     <select id="viewSel" class="hide-mob" title="Ver partitura o una parte" aria-label="Vista"></select>
     <span class="hide-mob" style="display:contents"><button data-tool="page"></button><button data-tool="instr"></button><button data-tool="transp"></button><button data-tool="measProps"></button><button data-tool="mixer"></button></span>
     <div class="grow"></div>
-    <button data-tool="cloud"></button><button data-tool="palette"></button><button data-tool="camera"></button><button data-tool="inspector"></button><span class="hide-mob" style="display:contents"><button data-tool="styles"></button><button data-tool="layout"></button><button data-tool="names"></button><button data-tool="colors"></button><button data-tool="darkPaper"></button><button data-tool="theme"></button></span>
+    <button data-tool="cloud"></button><button data-tool="palette"></button><button data-tool="camera"></button><button data-tool="inspector"></button><span class="hide-mob" style="display:contents"><button data-tool="lang"></button><button data-tool="styles"></button><button data-tool="layout"></button><button data-tool="names"></button><button data-tool="colors"></button><button data-tool="darkPaper"></button><button data-tool="theme"></button></span>
     <div class="menu hide-mob" id="exportMenu">
       <button class="iconbtn" id="btnExport" title="Exportar e imprimir" aria-label="Exportar"><svg class="ic"><use href="#i-download"/></svg></button>
       <div class="menu-list"><button data-tool="save"></button><button data-tool="saveVer"></button><button data-tool="versions"></button><button data-tool="camera"></button><button data-tool="xml"></button><button data-tool="mid"></button><button data-tool="pdf"></button><button data-tool="pdfParts"></button><button data-tool="rehearsal"></button></div>
@@ -775,7 +776,7 @@ function normalize(o){
 }
 function mkParts(id, nameOverride, measures){
   const ins=INSTR_BY[id]||INSTR_BY.voz;
-  const base={name:nameOverride||ins.name, short:ins.short, inst:ins.id, clef:ins.clef, prog:ins.prog, oct:ins.oct||0, staff:ins.staff, vol:1, mute:false, solo:false, brace:false, clefs:{},
+  const base={name:(typeof tr==='function'?tr(nameOverride||ins.name):(nameOverride||ins.name)), short:ins.short, inst:ins.id, clef:ins.clef, prog:ins.prog, oct:ins.oct||0, staff:ins.staff, vol:1, mute:false, solo:false, brace:false, clefs:{},
     measures:Array.from({length:measures},()=>[])};
   if(!ins.pair) return [base];
   base.brace=true;
@@ -1248,7 +1249,7 @@ function drawHeader(ctx, W, h, padX, padT){
   if(P.subtitle){ ctx.setFont('Georgia',15); ctx.fillText(P.subtitle, W/2-ctx.measureText(P.subtitle).width/2, padT+54); }
   ctx.setFont('Georgia',13,'normal','italic'); if(h.composer){ ctx.fillText(h.composer, W-padX-ctx.measureText(h.composer).width, padT+76); }
   if(P.arranger){ const a='Arr.: '+P.arranger; ctx.fillText(a, W-padX-ctx.measureText(a).width, padT+94); }
-  if(P.lyricist){ ctx.fillText('Letra: '+P.lyricist, padX, padT+94); }
+  if(P.lyricist){ ctx.fillText(tr('Letra')+': '+P.lyricist, padX, padT+94); }
   if(h.part){ ctx.setFont('Georgia',14,'bold'); ctx.fillText(h.part, padX, padT+76); }
   ctx.restore();
 }
@@ -1399,7 +1400,7 @@ function render(){
   pageEls.forEach((pe,pi)=>bindPage(pe,pi));
   drawRange(); fitView(); status(); save(); positionLyricEditor(); if(typeof inspOn!=='undefined' && inspOn) refreshInspector(); if(typeof cloudTick==='function') cloudTick();
 }
-function refreshMeta(){ [['inTitle','title'],['inComposer','composer'],['inSubtitle','subtitle'],['inLyricist','lyricist'],['inArranger','arranger']].forEach(([id,f])=>{ const e=$(id); if(e && document.activeElement!==e) e.value=P[f]||''; });
+function refreshMeta(){ [['inTitle','Título'],['inSubtitle','Subtítulo'],['inLyricist','Letra de…'],['inComposer','Compositor/a'],['inArranger','Arreglo']].forEach(([id,t])=>{ const e=$(id); if(e) e.placeholder=tr(t); }); [['inTitle','title'],['inComposer','composer'],['inSubtitle','subtitle'],['inLyricist','lyricist'],['inArranger','arranger']].forEach(([id,f])=>{ const e=$(id); if(e && document.activeElement!==e) e.value=P[f]||''; });
   $('inTempo').value=P.tempo; const tm=$('inTempoM'); if(tm) tm.value=P.tempo;
   const bn=beatNote(P.tempoBeat||pulseLen(0)), key=bn[0]+(bn[1]?'.':'');
   document.querySelectorAll('.tglyph').forEach(el=>{ if(el.dataset.k===key) return; el.dataset.k=key; el.innerHTML=`<span class="glyph" data-glyph="${bn[0]}"></span>${bn[1]?'<b class="tdot">.</b>':''}`; paintGlyphs(el); }); }
@@ -1444,11 +1445,11 @@ function showGhost(h, shift){
   out+=glyphAt(head, X+6, gy, rest? sp*3 : sp*1.18, rest?'h':'w', col);
   if(tool.acc && !rest) out+=glyphAt({'#':'sharp',b:'flat',n:'natural','##':'dsharp',bb:'dflat'}[tool.acc], X-8, y, sp*2.6, 'h', col);
   let nm='';
-  if(full) nm='compás completo';
-  else if(rest) nm='silencio';
+  if(full) nm=tr('compás completo');
+  else if(rest) nm=tr('silencio');
   else { const pt=fromDia(d), arr=part[VK[v]], meas=arr&&arr[b.m]?arr[b.m]:[];
     const a=measAlts([...meas,{step:pt.step,oct:pt.oct,acc:tool.acc}], keyAt(b.m), null), al=a[a.length-1][0]; nm=(chord?'+ ':'')+pname(pt, al);
-    const rr=settings.range&&partRange(b.p), km=midiOf(pt,al,part); if(rr && (km<rr[0]||km>rr[1])) nm+=' · fuera de tesitura'; }
+    const rr=settings.range&&partRange(b.p), km=midiOf(pt,al,part); if(rr && (km<rr[0]||km>rr[1])) nm+=' · '+tr('fuera de tesitura'); }
   out+=`<text class="gl" x="${X+22}" y="${Math.min(gy,b.top)-12}" fill="${col}">${nm}</text>`;
   pe.gh.innerHTML=out;
 }
@@ -2399,6 +2400,631 @@ async function cloudVersions(){
     const {data:v,error}=await SB.from('pc_versions').select('data').eq('id',b.closest('[data-id]').dataset.id).single(); if(error){ toast(error.message); return; }
     snapshot(); P=normalize(v.data); sel=null; range=null; render(); refreshViewSel(); closeDlg(); toast('Versión restaurada'); });
 }
+/* ---------- idiomas: galego (por defecto), castellano, català, euskara ----------
+   Los textos del código están en castellano; aquí se traducen. El contenido de las partituras
+   (títulos, letra, nombres escritos por la persona) nunca se traduce. */
+const LANGS = {gl:'Galego', es:'Castellano', ca:'Català', eu:'Euskara'};
+const I18N_SRC = `
+Redonda|Redonda|Rodona|Biribila
+Blanca|Branca|Blanca|Zuria
+Negra|Negra|Negra|Beltza
+Corchea|Corchea|Corxera|Kortxea
+Semicorchea|Semicorchea|Semicorxera|Kortxeaerdia
+Fusa|Fusa|Fusa|Fusa
+redonda|redonda|rodona|biribila
+blanca|branca|blanca|zuria
+negra|negra|negra|beltza
+corchea|corchea|corxera|kortxea
+semicorchea|semicorchea|semicorxera|kortxeaerdia
+fusa|fusa|fusa|fusa
+blanca con puntillo|branca con puntiño|blanca amb punt|zuri puntuduna
+negra con puntillo|negra con puntiño|negra amb punt|beltz puntuduna
+corchea con puntillo|corchea con puntiño|corxera amb punt|kortxea puntuduna
+con puntillo|con puntiño|amb punt|puntuduna
+Puntillo|Puntiño|Punt|Puntua
+Silencio|Silencio|Silenci|Isilunea
+silencio|silencio|silenci|isilunea
+Tresillo|Tresillo|Treset|Hirukotea
+Dosillo|Dosillo|Doset|Bikotea
+Cuatrillo|Cuatrillo|Quadriolet|Laukotea
+Quintillo|Quintillo|Cinquet|Bostekoa
+Seisillo|Seisillo|Sisè|Seikotea
+Septillo|Septillo|Septet|Zazpikotea
+Duración|Duración|Durada|Iraupena
+Escritura|Escritura|Escriptura|Idazketa
+Alteraciones|Alteracións|Alteracions|Alterazioak
+Articulación|Articulación|Articulació|Artikulazioa
+Articulación y ornamentos|Articulación e ornamentos|Articulació i ornaments|Artikulazioa eta apaingarriak
+Ornamentos|Ornamentos|Ornaments|Apaingarriak
+Expresión|Expresión|Expressió|Adierazpena
+Barras|Barras|Barres|Barrak
+Compás|Compás|Compàs|Konpasa
+Edición|Edición|Edició|Edizioa
+Sonido|Son|So|Soinua
+Partitura|Partitura|Partitura|Partitura
+Partitura y sonido|Partitura e son|Partitura i so|Partitura eta soinua
+Vista|Vista|Vista|Ikuspegia
+Archivo|Arquivo|Fitxer|Fitxategia
+Tempo · estilo · vista|Tempo · estilo · vista|Tempo · estil · vista|Tempoa · estiloa · ikuspegia
+Sostenido|Sostido|Sostingut|Diesa
+Bemol|Bemol|Bemoll|Bemola
+Becuadro|Becadro|Becaire|Bekuadroa
+Doble sostenido|Dobre sostido|Doble sostingut|Diesa bikoitza
+Doble bemol|Dobre bemol|Doble bemoll|Bemol bikoitza
+Staccato|Staccato|Staccato|Staccato
+Staccatissimo|Staccatissimo|Staccatissimo|Staccatissimo
+Acento|Acento|Accent|Azentua
+Marcato|Marcato|Marcato|Marcato
+Tenuto|Tenuto|Tenuto|Tenuto
+Calderón|Calderón|Calderó|Kalderoia
+Trino|Trino|Trinat|Trinoa
+Mordente|Mordente|Mordent|Mordentea
+Grupeto|Grupeto|Grupet|Grupetoa
+Modo acorde: añadir notas a la seleccionada|Modo acorde: engadir notas á seleccionada|Mode acord: afegir notes a la seleccionada|Akorde modua: gehitu notak hautatutakoari
+Ligadura de unión|Ligadura de unión|Lligadura d'unió|Lotura
+Ligadura de expresión|Ligadura de expresión|Lligadura d'expressió|Adierazpen-lotura
+Apoyatura (Alt+↑↓ cambia su altura)|Apoiatura (Alt+↑↓ cambia a súa altura)|Appoggiatura (Alt+↑↓ canvia l'altura)|Apoiatura (Alt+↑↓ altuera aldatzen du)
+Regulador crescendo|Regulador crescendo|Regulador crescendo|Crescendo erregulatzailea
+Regulador diminuendo|Regulador diminuendo|Regulador diminuendo|Diminuendo erregulatzailea
+Texto de expresión (dolce, rit.…)|Texto de expresión (dolce, rit.…)|Text d'expressió (dolce, rit.…)|Adierazpen-testua (dolce, rit.…)
+Letra: espacio o guion pasa a la nota siguiente|Letra: espazo ou guión pasa á nota seguinte|Lletra: espai o guionet passa a la nota següent|Letra: zuriuneak edo marrak hurrengo notara pasatzen du
+Cifrado (acorde sobre la nota)|Cifrado (acorde sobre a nota)|Xifrat (acord sobre la nota)|Zifratua (akordea notaren gainean)
+Estrofa de la letra (1–4)|Estrofa da letra (1–4)|Estrofa de la lletra (1–4)|Letraren ahapaldia (1–4)
+Añadir compás al final|Engadir compás ao final|Afegir compàs al final|Gehitu konpasa amaieran
+Insertar compás tras el actual|Inserir compás tras o actual|Inserir compàs després de l'actual|Txertatu konpasa unekoaren ondoren
+Eliminar compás(es) seleccionados|Eliminar compás(es) seleccionados|Eliminar compàs(os) seleccionats|Ezabatu hautatutako konpasa(k)
+Propiedades del compás: compás, armadura, clave, repeticiones, casillas, saltos|Propiedades do compás: compás, armadura, clave, repeticións, casiñas, saltos|Propietats del compàs: compàs, armadura, clau, repeticions, caselles, salts|Konpasaren propietateak: konpasa, armadura, giltza, errepikapenak, laukiak, jauziak
+Inicio de repetición|Inicio de repetición|Inici de repetició|Errepikapenaren hasiera
+Fin de repetición|Fin de repetición|Fi de repetició|Errepikapenaren amaiera
+Copiar|Copiar|Copiar|Kopiatu
+Cortar|Cortar|Retallar|Ebaki
+Pegar|Pegar|Enganxar|Itsatsi
+Seleccionar todo|Seleccionar todo|Seleccionar-ho tot|Hautatu dena
+Deshacer|Desfacer|Desfer|Desegin
+Rehacer|Refacer|Refer|Berregin
+Borrar|Borrar|Esborrar|Ezabatu
+Subir un grado|Subir un grao|Pujar un grau|Igo gradu bat
+Bajar un grado|Baixar un grao|Baixar un grau|Jaitsi gradu bat
+Nota anterior|Nota anterior|Nota anterior|Aurreko nota
+Nota siguiente|Nota seguinte|Nota següent|Hurrengo nota
+Reproducir / parar (desde la selección)|Reproducir / parar (desde a selección)|Reproduir / aturar (des de la selecció)|Erreproduzitu / gelditu (hautapenetik)
+Parar|Parar|Aturar|Gelditu
+Repetir la selección en bucle|Repetir a selección en bucle|Repetir la selecció en bucle|Errepikatu hautapena begizta batean
+Metrónomo|Metrónomo|Metrònom|Metronomoa
+Metrónomo con subdivisión|Metrónomo con subdivisión|Metrònom amb subdivisió|Metronomoa azpizatiketarekin
+Mezclador: volumen, silenciar y solo|Mesturador: volume, silenciar e solo|Mesclador: volum, silenciar i solo|Nahasgailua: bolumena, isilarazi eta bakarka
+Mezclador|Mesturador|Mesclador|Nahasgailua
+Teclado de piano|Teclado de piano|Teclat de piano|Piano-teklatua
+Sonidos reales (requiere conexión)|Sons reais (precisa conexión)|Sons reals (cal connexió)|Benetako soinuak (konexioa behar da)
+Oír las notas al escribir|Oír as notas ao escribir|Escoltar les notes en escriure|Notak entzun idaztean
+Instrumentos y pentagramas|Instrumentos e pentagramas|Instruments i pentagrames|Instrumentuak eta pentagramak
+Transportar|Transportar|Transportar|Transposatu
+Vista de páginas / continua|Vista de páxinas / continua|Vista de pàgines / contínua|Orrien ikuspegia / jarraitua
+Buscar comando|Buscar comando|Cercar ordre|Bilatu agindua
+Acercar|Achegar|Apropar|Hurbildu
+Alejar|Afastar|Allunyar|Urrundu
+Ajustar al ancho|Axustar ao ancho|Ajustar a l'amplada|Zabalerara egokitu
+Tema claro / oscuro|Tema claro / escuro|Tema clar / fosc|Gai argia / iluna
+Más opciones|Máis opcións|Més opcions|Aukera gehiago
+Nuevo proyecto|Novo proxecto|Projecte nou|Proiektu berria
+Abrir .noa o MusicXML|Abrir .noa ou MusicXML|Obrir .noa o MusicXML|Ireki .noa edo MusicXML
+Guardar proyecto (.noa)|Gardar proxecto (.noa)|Desar projecte (.noa)|Gorde proiektua (.noa)
+Exportar MusicXML|Exportar MusicXML|Exportar MusicXML|Esportatu MusicXML
+Exportar MIDI|Exportar MIDI|Exportar MIDI|Esportatu MIDI
+PDF / imprimir partitura (A4)|PDF / imprimir partitura (A4)|PDF / imprimir partitura (A4)|PDF / inprimatu partitura (A4)
+PDF / imprimir partes individuales|PDF / imprimir partes individuais|PDF / imprimir particel·les|PDF / inprimatu zati bakoitza
+Digitación|Dixitación|Digitació|Hatzkada
+Arpegio (acordes)|Arpexo (acordes)|Arpegi (acords)|Arpegioa (akordeak)
+Trémolo (1, 2 o 3 barras)|Trémolo (1, 2 ou 3 barras)|Trèmolo (1, 2 o 3 barres)|Tremoloa (1, 2 edo 3 barra)
+Dictado por micrófono (canta o toca nota a nota)|Ditado por micrófono (canta ou toca nota a nota)|Dictat per micròfon (canta o toca nota a nota)|Mikrofono bidezko diktaketa (kantatu edo jo notaz nota)
+Pistas de ensayo en audio (WAV) por voz|Pistas de ensaio en audio (WAV) por voz|Pistes d'assaig en àudio (WAV) per veu|Entsegu-pistak audioan (WAV) ahotsez ahots
+Marcar notas fuera de tesitura|Marcar notas fóra de tesitura|Marcar notes fora de tessitura|Markatu tesituratik kanpoko notak
+Partitura en modo oscuro (lectura)|Partitura en modo escuro (lectura)|Partitura en mode fosc (lectura)|Partitura modu ilunean (irakurketa)
+Octava alta (8va)|Oitava alta (8va)|Octava alta (8va)|Zortzidun goia (8va)
+Octava baja (8vb)|Oitava baixa (8vb)|Octava baixa (8vb)|Zortzidun behea (8vb)
+Doble octava alta (15ma)|Dobre oitava alta (15ma)|Doble octava alta (15ma)|Zortzidun bikoitz goia (15ma)
+Nombres de nota bajo las notas (Do Re Mi / C D E / no)|Nomes de nota baixo as notas (Do Re Mi / C D E / non)|Noms de nota sota les notes (Do Re Mi / C D E / no)|Noten izenak noten azpian (Do Re Mi / C D E / ez)
+Colores por nota (estilo Boomwhackers)|Cores por nota (estilo Boomwhackers)|Colors per nota (estil Boomwhackers)|Koloreak notaka (Boomwhackers estiloa)
+Maquetación: tamaño del pentagrama y compases por sistema|Maquetación: tamaño do pentagrama e compases por sistema|Maquetació: mida del pentagrama i compassos per sistema|Maketazioa: pentagramaren tamaina eta konpasak sistemako
+Ir al compás|Ir ao compás|Anar al compàs|Joan konpasera
+Guardar versión (en este navegador)|Gardar versión (neste navegador)|Desar versió (en aquest navegador)|Gorde bertsioa (nabigatzaile honetan)
+Versiones guardadas|Versións gardadas|Versions desades|Gordetako bertsioak
+Barra automática (según el compás)|Barra automática (segundo o compás)|Barra automàtica (segons el compàs)|Barra automatikoa (konpasaren arabera)
+Sin barra|Sen barra|Sense barra|Barrarik gabe
+Empezar barra en esta nota|Comezar barra nesta nota|Començar barra en aquesta nota|Hasi barra nota honetan
+Unir barra con la nota anterior|Unir barra coa nota anterior|Unir barra amb la nota anterior|Lotu barra aurreko notarekin
+Reagrupar ritmos: divide y liga las figuras que ocultan la estructura del compás|Reagrupar ritmos: divide e liga as figuras que agochan a estrutura do compás|Reagrupar ritmes: divideix i lliga les figures que amaguen l'estructura del compàs|Erritmoak berrelkartu: konpasaren egitura ezkutatzen duten figurak zatitu eta lotu
+Agrupar automáticamente al escribir según el compás|Agrupar automaticamente ao escribir segundo o compás|Agrupar automàticament en escriure segons el compàs|Taldekatu automatikoki idaztean konpasaren arabera
+Compás de entrada (metrónomo) antes de reproducir|Compás de entrada (metrónomo) antes de reproducir|Compàs d'entrada (metrònom) abans de reproduir|Sarrera-konpasa (metronomoa) erreproduzitu aurretik
+Captura de imagen (como la cámara de MuseScore 3): fondo transparente, tinta negra|Captura de imaxe (como a cámara de MuseScore 3): fondo transparente, tinta negra|Captura d'imatge (com la càmera de MuseScore 3): fons transparent, tinta negra|Irudi-kaptura (MuseScore 3ko kamera bezala): atzeko plano gardena, tinta beltza
+Inspector de propiedades|Inspector de propiedades|Inspector de propietats|Propietate-ikuskatzailea
+Repetición de compás (𝄎): repite el anterior|Repetición de compás (𝄎): repite o anterior|Repetició de compàs (𝄎): repeteix l'anterior|Konpas-errepikapena (𝄎): aurrekoa errepikatzen du
+Estilo de escritura (grabado o manuscrito)|Estilo de escritura (gravado ou manuscrito)|Estil d'escriptura (gravat o manuscrit)|Idazketa-estiloa (grabatua edo eskuizkribua)
+Estilo de escritura|Estilo de escritura|Estil d'escriptura|Idazketa-estiloa
+Nube: entrar, tus partituras, compartir|Nube: entrar, as túas partituras, compartir|Núvol: entrar, les teves partitures, compartir|Hodeia: sartu, zure partiturak, partekatu
+Nube|Nube|Núvol|Hodeia
+Idioma|Idioma|Idioma|Hizkuntza
+Idioma de la aplicación|Idioma da aplicación|Idioma de l'aplicació|Aplikazioaren hizkuntza
+Estándar · grabado moderno|Estándar · gravado moderno|Estàndard · gravat modern|Estandarra · grabatu modernoa
+Grabado clásico|Gravado clásico|Gravat clàssic|Grabatu klasikoa
+Manuscrito jazz|Manuscrito jazz|Manuscrit jazz|Jazz eskuizkribua
+Manuscrito antiguo|Manuscrito antigo|Manuscrit antic|Eskuizkribu zaharra
+A la manera barroca · pluma y tinta ferrogálica|Á maneira barroca · pluma e tinta ferrogálica|A la manera barroca · ploma i tinta ferrogàl·lica|Barroko erara · luma eta tinta ferrogalikoa
+A la manera clásica · copia limpia a pluma|Á maneira clásica · copia limpa a pluma|A la manera clàssica · còpia neta a ploma|Klasiko erara · lumaz egindako kopia garbia
+Borrador romántico · cuaderno de esbozos|Borrador romántico · caderno de esbozos|Esborrany romàntic · quadern d'esbossos|Zirriborro erromantikoa · zirriborro-koadernoa
+Borrador a lápiz|Borrador a lapis|Esborrany a llapis|Arkatzezko zirriborroa
+Voz o instrumento solista|Voz ou instrumento solista|Veu o instrument solista|Ahots edo instrumentu bakarlaria
+Coro SATB|Coro SATB|Cor SATB|SATB abesbatza
+Coro SATB y piano|Coro SATB e piano|Cor SATB i piano|SATB abesbatza eta pianoa
+Voz y piano|Voz e piano|Veu i piano|Ahotsa eta pianoa
+Cuarteto de cuerda|Cuarteto de corda|Quartet de corda|Hari-laukotea
+Quinteto de viento madera|Quinteto de vento madeira|Quintet de vent fusta|Egurrezko haize-bostekotea
+Cuarteto de metales|Cuarteto de metais|Quartet de metalls|Metal-laukotea
+Lectura rítmica (1 línea)|Lectura rítmica (1 liña)|Lectura rítmica (1 línia)|Irakurketa erritmikoa (lerro 1)
+Ritmo a dos voces (2 × 1 línea)|Ritmo a dúas voces (2 × 1 liña)|Ritme a dues veus (2 × 1 línia)|Erritmoa bi ahotsetara (2 × lerro 1)
+Soprano|Soprano|Soprano|Sopranoa
+Contralto|Contralto|Contralt|Kontraltoa
+Tenor|Tenor|Tenor|Tenorra
+Barítono|Barítono|Baríton|Baritonoa
+Bajo|Baixo|Baix|Baxua
+Voz|Voz|Veu|Ahotsa
+Piano|Piano|Piano|Pianoa
+Órgano|Órgano|Orgue|Organoa
+Arpa|Arpa|Arpa|Harpa
+Guitarra|Guitarra|Guitarra|Gitarra
+Violín|Violín|Violí|Biolina
+Viola|Viola|Viola|Biola
+Violonchelo|Violonchelo|Violoncel|Biolontxeloa
+Contrabajo|Contrabaixo|Contrabaix|Kontrabaxua
+Flauta|Frauta|Flauta|Txirula
+Oboe|Óboe|Oboè|Oboea
+Clarinete|Clarinete|Clarinet|Klarinetea
+Fagot|Fagot|Fagot|Fagota
+Saxofón|Saxofón|Saxòfon|Saxofoia
+Trompeta|Trompeta|Trompeta|Tronpeta
+Trompa|Trompa|Trompa|Tronpa
+Trombón|Trombón|Trombó|Tronboia
+Tuba|Tuba|Tuba|Tuba
+Ritmo (1 línea)|Ritmo (1 liña)|Ritme (1 línia)|Erritmoa (lerro 1)
+Percusión|Percusión|Percussió|Perkusioa
+percusión|percusión|percussió|perkusioa
+Nueva partitura|Nova partitura|Partitura nova|Partitura berria
+Elige plantilla y datos iniciales. Todo se puede cambiar después.|Escolle modelo e datos iniciais. Todo se pode cambiar despois.|Tria plantilla i dades inicials. Tot es pot canviar després.|Aukeratu txantiloia eta hasierako datuak. Dena alda daiteke gero.
+Título|Título|Títol|Izenburua
+Plantilla|Modelo|Plantilla|Txantiloia
+Tonalidad|Tonalidade|Tonalitat|Tonalitatea
+Compases|Compases|Compassos|Konpasak
+Anacrusa|Anacrusa|Anacrusi|Anakrusa
+sin anacrusa|sen anacrusa|sense anacrusi|anakrusarik gabe
+acortar el último compás|acurtar o último compás|escurçar l'últim compàs|laburtu azken konpasa
+Tempo (pulso)|Tempo (pulso)|Tempo (pulsació)|Tempoa (pultsua)
+En la figura de pulso: negra en 4/4, negra con puntillo en 6/8, blanca en 3/2…|Na figura de pulso: negra en 4/4, negra con puntiño en 6/8, branca en 3/2…|En la figura de pulsació: negra en 4/4, negra amb punt en 6/8, blanca en 3/2…|Pultsu-figuran: beltza 4/4ean, beltz puntuduna 6/8an, zuria 3/2an…
+Tempo (en la figura de pulso del compás)|Tempo (na figura de pulso do compás)|Tempo (en la figura de pulsació del compàs)|Tempoa (konpasaren pultsu-figuran)
+También abre MusicXML (.musicxml, .mxl) y MuseScore 3 y 4 (.mscz, .mscx).|Tamén abre MusicXML (.musicxml, .mxl) e MuseScore 3 e 4 (.mscz, .mscx).|També obre MusicXML (.musicxml, .mxl) i MuseScore 3 i 4 (.mscz, .mscx).|MusicXML (.musicxml, .mxl) eta MuseScore 3 eta 4 (.mscz, .mscx) ere irekitzen ditu.
+Abrir archivo…|Abrir arquivo…|Obrir fitxer…|Ireki fitxategia…
+Cancelar|Cancelar|Cancel·lar|Utzi
+Crear|Crear|Crear|Sortu
+Cerrar|Pechar|Tancar|Itxi
+Aplicar|Aplicar|Aplicar|Aplikatu
+Título|Título|Títol|Izenburua
+Subtítulo|Subtítulo|Subtítol|Azpititulua
+Letra de…|Letra de…|Lletra de…|Letra:…
+Compositor/a|Compositor/a|Compositor/a|Konpositorea
+Compositor|Compositor|Compositor|Konpositorea
+Arreglo|Arranxo|Arranjament|Moldaketa
+Letrista|Letrista|Lletrista|Letragilea
+Arreglista|Arranxador|Arranjador|Moldatzailea
+Ayuda|Axuda|Ajuda|Laguntza
+Ayuda y atajos|Axuda e atallos|Ajuda i dreceres|Laguntza eta lasterbideak
+Contraer panel|Contraer panel|Plegar el tauler|Tolestu panela
+Expandir panel|Expandir panel|Desplegar el tauler|Zabaldu panela
+Contraer o expandir panel|Contraer ou expandir panel|Plegar o desplegar el tauler|Tolestu edo zabaldu panela
+Exportar|Exportar|Exportar|Esportatu
+Exportar e imprimir|Exportar e imprimir|Exportar i imprimir|Esportatu eta inprimatu
+Ver partitura o una parte|Ver partitura ou unha parte|Veure partitura o una particel·la|Ikusi partitura edo zati bat
+Partitura completa|Partitura completa|Partitura completa|Partitura osoa
+Teclado MIDI conectado|Teclado MIDI conectado|Teclat MIDI connectat|MIDI teklatua konektatuta
+Ratón:|Rato:|Ratolí:|Sagua:
+clic en el pentagrama escribe la nota donde ves la sombra · clic en una nota la selecciona ·|clic no pentagrama escribe a nota onde ves a sombra · clic nunha nota selecciónaa ·|clic al pentagrama escriu la nota on veus l'ombra · clic en una nota la selecciona ·|klik pentagraman: nota itzala dagoen tokian idazten du · klik nota batean: hautatu egiten du ·
+añade al acorde o amplía la selección.|engade ao acorde ou amplía a selección.|afegeix a l'acord o amplia la selecció.|akordeari gehitzen dio edo hautapena zabaltzen du.
+Notas:|Notas:|Notes:|Notak:
+escriben ·|escriben ·|escriuen ·|idazten dute ·
+añaden al acorde ·|engaden ao acorde ·|afegeixen a l'acord ·|akordeari gehitzen diote ·
+silencio ·|silencio ·|silenci ·|isilunea ·
+duración ·|duración ·|durada ·|iraupena ·
+puntillo ·|puntiño ·|punt ·|puntua ·
+grupos irregulares ·|grupos irregulares ·|grups irregulars ·|talde irregularrak ·
+Altura:|Altura:|Altura:|Altuera:
+grado ·|grao ·|grau ·|gradua ·
+semitono ·|semitón ·|semitò ·|tonuerdia ·
+octava ·|oitava ·|octava ·|zortziduna ·
+apoyatura|apoiatura|appoggiatura|apoiatura
+Selección:|Selección:|Selecció:|Hautapena:
+notas ·|notas ·|notes ·|notak ·
+compases ·|compases ·|compassos ·|konpasak ·
+todo ·|todo ·|tot ·|dena ·
+Signos:|Signos:|Signes:|Zeinuak:
+voz ·|voz ·|veu ·|ahotsa ·
+ligadura ·|ligadura ·|lligadura ·|lotura ·
+ligadura de expresión ·|ligadura de expresión ·|lligadura d'expressió ·|adierazpen-lotura ·
+staccato ·|staccato ·|staccato ·|staccato ·
+calderón ·|calderón ·|calderó ·|kalderoia ·
+reguladores ·|reguladores ·|reguladors ·|erregulatzaileak ·
+letra (espacio o guion avanza) ·|letra (espazo ou guión avanza) ·|lletra (espai o guionet avança) ·|letra (zuriuneak edo marrak aurrera egiten du) ·
+texto ·|texto ·|text ·|testua ·
+voz|voz|veu|ahotsa
+Más:|Máis:|Més:|Gehiago:
+ir a compás ·|ir a compás ·|anar a compàs ·|joan konpasera ·
+buscar comando ·|buscar comando ·|cercar ordre ·|bilatu agindua ·
+compás ·|compás ·|compàs ·|konpasa ·
+instrumentos ·|instrumentos ·|instruments ·|instrumentuak ·
+piano ·|piano ·|piano ·|pianoa ·
+metrónomo ·|metrónomo ·|metrònom ·|metronomoa ·
+espacio|espazo|espai|zuriunea
+reproducir ·|reproducir ·|reproduir ·|erreproduzitu ·
+En móvil:|No móbil:|Al mòbil:|Mugikorrean:
+mantén pulsado y desliza|mantén premido e esvara|mantén premut i llisca|eutsi sakatuta eta irristatu
+sobre el pentagrama para elegir la altura y suelta para escribir.|sobre o pentagrama para escoller a altura e solta para escribir.|sobre el pentagrama per triar l'altura i deixa anar per escriure.|pentagraman altuera aukeratzeko eta askatu idazteko.
+o|ou|o|edo
+Compás completo: no cabe una|Compás completo: non cabe unha|Compàs complet: no hi cap una|Konpasa beteta dago: ez da sartzen
+No cabe en el compás|Non cabe no compás|No hi cap al compàs|Ez da konpasean sartzen
+No cabía entera: el resto no se ha escrito|Non cabía enteira: o resto non se escribiu|No hi cabia sencera: la resta no s'ha escrit|Ez zen osorik sartzen: gainerakoa ez da idatzi
+Debe quedar al menos un compás|Debe quedar polo menos un compás|Ha de quedar almenys un compàs|Gutxienez konpas batek geratu behar du
+Deshecho|Desfeito|Desfet|Desegina
+Rehecho|Refeito|Refet|Berregina
+Selecciona una nota|Selecciona unha nota|Selecciona una nota|Hautatu nota bat
+Selecciona un acorde|Selecciona un acorde|Selecciona un acord|Hautatu akorde bat
+Selecciona notas (o un rango)|Selecciona notas (ou un rango)|Selecciona notes (o un interval)|Hautatu notak (edo tarte bat)
+Selecciona una nota (o un rango) seguida de otra|Selecciona unha nota (ou un rango) seguida doutra|Selecciona una nota (o un interval) seguida d'una altra|Hautatu nota bat (edo tarte bat) eta beste bat ondoren
+Selecciona la nota donde empieza la letra|Selecciona a nota onde comeza a letra|Selecciona la nota on comença la lletra|Hautatu letra hasten den nota
+Selecciona la nota donde va el acorde|Selecciona a nota onde vai o acorde|Selecciona la nota on va l'acord|Hautatu akordea doan nota
+Selecciona una nota para formar el acorde|Selecciona unha nota para formar o acorde|Selecciona una nota per formar l'acord|Hautatu nota bat akordea osatzeko
+Selecciona las notas que van a la octava|Selecciona as notas que van á oitava|Selecciona les notes que van a l'octava|Hautatu zortzidunera doazen notak
+Selecciona los compases|Selecciona os compases|Selecciona els compassos|Hautatu konpasak
+Selecciona los compases con acordes|Selecciona os compases con acordes|Selecciona els compassos amb acords|Hautatu akordeak dituzten konpasak
+Selecciona el compás que repite al anterior|Selecciona o compás que repite o anterior|Selecciona el compàs que repeteix l'anterior|Hautatu aurrekoa errepikatzen duen konpasa
+Selecciona algo para copiar|Selecciona algo para copiar|Selecciona alguna cosa per copiar|Hautatu zerbait kopiatzeko
+Selecciona dos o más pentagramas (⇧+clic)|Selecciona dous ou máis pentagramas (⇧+clic)|Selecciona dos o més pentagrames (⇧+clic)|Hautatu bi pentagrama edo gehiago (⇧+klik)
+Selecciona uno o más compases (⇧+clic para varios pentagramas)|Selecciona un ou máis compases (⇧+clic para varios pentagramas)|Selecciona un o més compassos (⇧+clic per a diversos pentagrames)|Hautatu konpas bat edo gehiago (⇧+klik hainbat pentagramatarako)
+Selecciona una nota o un rango para ver y cambiar sus propiedades.|Selecciona unha nota ou un rango para ver e cambiar as súas propiedades.|Selecciona una nota o un interval per veure i canviar-ne les propietats.|Hautatu nota bat edo tarte bat haren propietateak ikusi eta aldatzeko.
+Compás copiado|Compás copiado|Compàs copiat|Konpasa kopiatuta
+No hay nada copiado|Non hai nada copiado|No hi ha res copiat|Ez dago ezer kopiatuta
+Pegado|Pegado|Enganxat|Itsatsita
+No hay notas que transportar|Non hai notas que transportar|No hi ha notes per transportar|Ez dago transposatzeko notarik
+Transportado|Transportado|Transportat|Transposatuta
+Proyecto guardado (.noa)|Proxecto gardado (.noa)|Projecte desat (.noa)|Proiektua gordeta (.noa)
+MusicXML exportado|MusicXML exportado|MusicXML exportat|MusicXML esportatuta
+MIDI exportado|MIDI exportado|MIDI exportat|MIDI esportatuta
+Cargando sonidos…|Cargando sons…|Carregant sons…|Soinuak kargatzen…
+Sin conexión a los sonidos: uso el sintetizador|Sen conexión cos sons: uso o sintetizador|Sense connexió als sons: faig servir el sintetitzador|Soinuekin konexiorik ez: sintetizadorea erabiltzen dut
+Partitura de solo lectura|Partitura de só lectura|Partitura només de lectura|Irakurtzeko soilik den partitura
+Versión guardada|Versión gardada|Versió desada|Bertsioa gordeta
+Versión restaurada|Versión restaurada|Versió restaurada|Bertsioa leheneratuta
+No hay espacio en el navegador: descarga el .noa|Non hai espazo no navegador: descarga o .noa|No hi ha espai al navegador: descarrega el .noa|Nabigatzailean ez dago lekurik: deskargatu .noa
+Micrófono apagado|Micrófono apagado|Micròfon apagat|Mikrofonoa itzalita
+No hay acceso al micrófono|Non hai acceso ao micrófono|No hi ha accés al micròfon|Ez dago mikrofonorako sarbiderik
+Marca al menos una voz|Marca polo menos unha voz|Marca almenys una veu|Markatu gutxienez ahots bat
+No se pudo crear la imagen|Non se puido crear a imaxe|No s'ha pogut crear la imatge|Ezin izan da irudia sortu
+Imagen copiada: pégala en tu documento|Imaxe copiada: pégaa no teu documento|Imatge copiada: enganxa-la al document|Irudia kopiatuta: itsatsi zure dokumentuan
+Este navegador no deja copiar imágenes: usa «Descargar PNG»|Este navegador non deixa copiar imaxes: usa «Descargar PNG»|Aquest navegador no permet copiar imatges: fes servir «Descarregar PNG»|Nabigatzaile honek ez du irudiak kopiatzen uzten: erabili «Deskargatu PNG»
+Captura de imagen|Captura de imaxe|Captura d'imatge|Irudi-kaptura
+Resolución|Resolución|Resolució|Bereizmena
+Pantalla (2×)|Pantalla (2×)|Pantalla (2×)|Pantaila (2×)
+300 ppp (impresión)|300 ppp (impresión)|300 ppp (impressió)|300 ppp (inprimatzeko)
+conservar los colores puestos a mano en notas|conservar as cores postas a man nas notas|conservar els colors posats a mà a les notes|eskuz notei jarritako koloreak mantendu
+Fondo transparente y tinta negra, sin elementos ocultos, sin selección ni textura de papel. «Copiar» permite pegarla directamente en un procesador de textos.|Fondo transparente e tinta negra, sen elementos ocultos, sen selección nin textura de papel. «Copiar» permite pegala directamente nun procesador de textos.|Fons transparent i tinta negra, sense elements ocults, sense selecció ni textura de paper. «Copiar» permet enganxar-la directament en un processador de textos.|Atzeko plano gardena eta tinta beltza, elementu ezkuturik gabe, hautapenik eta paper-ehundurarik gabe. «Kopiatu»k testu-prozesadore batean zuzenean itsasteko aukera ematen du.
+Copiar imagen|Copiar imaxe|Copiar imatge|Kopiatu irudia
+Descargar PNG|Descargar PNG|Descarregar PNG|Deskargatu PNG
+Descargar SVG|Descargar SVG|Descarregar SVG|Deskargatu SVG
+Descargar .noa|Descargar .noa|Descarregar .noa|Deskargatu .noa
+Inspector|Inspector|Inspector|Ikuskatzailea
+Cerrar inspector|Pechar inspector|Tancar l'inspector|Itxi ikuskatzailea
+Nota|Nota|Nota|Nota
+Cabeza|Cabeza|Cap|Burua
+normal|normal|normal|normala
+cruz|cruz|creu|gurutzea
+diamante|diamante|diamant|diamantea
+triángulo|triángulo|triangle|triangelua
+cuadrada|cadrada|quadrada|karratua
+círculo con cruz|círculo con cruz|cercle amb creu|zirkulua gurutzearekin
+Plica|Plica|Plica|Zurtoina
+automática|automática|automàtica|automatikoa
+arriba|arriba|amunt|gora
+abajo|abaixo|avall|behera
+sin plica|sen plica|sense plica|zurtoinik gabe
+Barra|Barra|Barra|Barra
+sin barra|sen barra|sense barra|barrarik gabe
+empezar aquí|comezar aquí|començar aquí|hasi hemen
+unir con la anterior|unir coa anterior|unir amb l'anterior|lotu aurrekoarekin
+pequeña (guía)|pequena (guía)|petita (guia)|txikia (gida)
+invisible (no se imprime)|invisible (non se imprime)|invisible (no s'imprimeix)|ikusezina (ez da inprimatzen)
+ligada a la siguiente|ligada á seguinte|lligada a la següent|hurrengoari lotuta
+Color|Cor|Color|Kolorea
+sin color|sen cor|sense color|kolorerik gabe
+Dinámica|Dinámica|Dinàmica|Dinamika
+Texto|Texto|Text|Testua
+Cifrado|Cifrado|Xifrat|Zifratua
+Letra|Letra|Lletra|Letra
+Compás e instrumento|Compás e instrumento|Compàs i instrument|Konpasa eta instrumentua
+Propiedades del compás…|Propiedades do compás…|Propietats del compàs…|Konpasaren propietateak…
+Repetir compás anterior (𝄎)|Repetir compás anterior (𝄎)|Repetir el compàs anterior (𝄎)|Errepikatu aurreko konpasa (𝄎)
+Instrumentos…|Instrumentos…|Instruments…|Instrumentuak…
+Maquetación…|Maquetación…|Maquetació…|Maketazioa…
+Maquetación|Maquetación|Maquetació|Maketazioa
+Tamaño del pentagrama|Tamaño do pentagrama|Mida del pentagrama|Pentagramaren tamaina
+Compases por sistema|Compases por sistema|Compassos per sistema|Konpasak sistemako
+Automático|Automático|Automàtic|Automatikoa
+Instrumentos|Instrumentos|Instruments|Instrumentuak
+Añadir|Engadir|Afegir|Gehitu
+Nombre|Nome|Nom|Izena
+Abreviatura|Abreviatura|Abreviatura|Laburdura
+Clave|Clave|Clau|Giltza
+Tipo de pentagrama|Tipo de pentagrama|Tipus de pentagrama|Pentagrama mota
+5 líneas|5 liñas|5 línies|5 lerro
+1 línea (ritmo)|1 liña (ritmo)|1 línia (ritme)|Lerro 1 (erritmoa)
+Unir con llave al siguiente|Unir con chave ao seguinte|Unir amb clau al següent|Giltzaz lotu hurrengoarekin
+Subir|Subir|Pujar|Igo
+Bajar|Baixar|Baixar|Jaitsi
+Quitar|Quitar|Treure|Kendu
+(sin nombre)|(sen nome)|(sense nom)|(izenik gabe)
+abr.|abr.|abr.|lab.
+Las llaves agrupan dos pentagramas (piano). Los cambios de clave a mitad de obra se ponen en las propiedades del compás.|As chaves agrupan dous pentagramas (piano). Os cambios de clave a metade da obra póñense nas propiedades do compás.|Les claus agrupen dos pentagrames (piano). Els canvis de clau a meitat d'obra es posen a les propietats del compàs.|Giltzek bi pentagrama taldekatzen dituzte (pianoa). Lanaren erdiko giltza-aldaketak konpasaren propietateetan jartzen dira.
+Volumen|Volume|Volum|Bolumena
+Silenciar|Silenciar|Silenciar|Isilarazi
+Solo|Solo|Solo|Bakarka
+Escuchar este pentagrama|Escoitar este pentagrama|Escoltar aquest pentagrama|Entzun pentagrama hau
+Modo|Modo|Mode|Modua
+intervalo|intervalo|interval|tartea
+a tonalidad|a tonalidade|a tonalitat|tonalitatera
+Intervalo|Intervalo|Interval|Tartea
+Subir|Subir|Pujar|Igo
+Alcance|Alcance|Abast|Irismena
+Solo la selección|Só a selección|Només la selecció|Hautapena soilik
+Toda la partitura (cambia armaduras)|Toda a partitura (cambia armaduras)|Tota la partitura (canvia armadures)|Partitura osoa (armadurak aldatzen ditu)
+2ª menor|2ª menor|2a menor|2. txikia
+2ª mayor|2ª maior|2a major|2. handia
+3ª menor|3ª menor|3a menor|3. txikia
+3ª mayor|3ª maior|3a major|3. handia
+4ª justa|4ª xusta|4a justa|4. justua
+4ª aumentada|4ª aumentada|4a augmentada|4. handitua
+5ª disminuida|5ª diminuída|5a disminuïda|5. txikitua
+5ª justa|5ª xusta|5a justa|5. justua
+6ª menor|6ª menor|6a menor|6. txikia
+6ª mayor|6ª maior|6a major|6. handia
+7ª menor|7ª menor|7a menor|7. txikia
+7ª mayor|7ª maior|7a major|7. handia
+Octava|Oitava|Octava|Zortziduna
+Repetición|Repetición|Repetició|Errepikapena
+inicio|inicio|inici|hasiera
+final|final|final|amaiera
+Casilla|Casiña|Casella|Laukia
+1ª vez|1ª vez|1a vegada|1. aldia
+2ª vez|2ª vez|2a vegada|2. aldia
+Señal|Sinal|Senyal|Seinalea
+Salto al final|Salto ao final|Salt al final|Jauzia amaieran
+Marca de ensayo|Marca de ensaio|Marca d'assaig|Entsegu-marka
+Duración real|Duración real|Durada real|Benetako iraupena
+Después del compás|Despois do compás|Després del compàs|Konpasaren ondoren
+Salto de sistema|Salto de sistema|Salt de sistema|Sistema-jauzia
+Salto de página|Salto de páxina|Salt de pàgina|Orri-jauzia
+Metrónomo|Metrónomo|Metrònom|Metronomoa
+pulso del compás|pulso do compás|pulsació del compàs|konpasaren pultsua
+sin cambio|sen cambio|sense canvi|aldaketarik gabe
+— sin cambio —|— sen cambio —|— sense canvi —|— aldaketarik gabe —
+Compás aditivo: escribe la agrupación en el numerador (3+2, 2+2+3…). Para casos puntuales usa los botones de barras sobre las notas.|Compás aditivo: escribe a agrupación no numerador (3+2, 2+2+3…). Para casos puntuais usa os botóns de barras sobre as notas.|Compàs additiu: escriu l'agrupació al numerador (3+2, 2+2+3…). Per a casos puntuals fes servir els botons de barres sobre les notes.|Konpas gehigarria: idatzi taldekatzea zenbakitzailean (3+2, 2+2+3…). Kasu zehatzetarako, erabili noten gaineko barra-botoiak.
+Escribe 5 o un compás aditivo como 3+2|Escribe 5 ou un compás aditivo como 3+2|Escriu 5 o un compàs additiu com 3+2|Idatzi 5 edo 3+2 bezalako konpas gehigarri bat
+Allegro, rit., a tempo…|Allegro, rit., a tempo…|Allegro, rit., a tempo…|Allegro, rit., a tempo…
+Sol|Sol|Sol|Sol
+Fa|Fa|Fa|Fa
+Do en 3ª|Do en 3ª|Do en 3a|Do 3. lerroan
+Do en 4ª|Do en 4ª|Do en 4a|Do 4. lerroan
+Do en 1ª|Do en 1ª|Do en 1a|Do 1. lerroan
+Do en 2ª|Do en 2ª|Do en 2a|Do 2. lerroan
+Do en 5ª|Do en 5ª|Do en 5a|Do 5. lerroan
+Sol en 1ª (francesa)|Sol en 1ª (francesa)|Sol en 1a (francesa)|Sol 1. lerroan (frantsesa)
+Pistas de ensayo|Pistas de ensaio|Pistes d'assaig|Entsegu-pistak
+Se crea un archivo de audio (WAV) por cada voz marcada: esa voz suena destacada y las demás de fondo. Útil para que cada cuerda estudie en casa.|Créase un ficheiro de audio (WAV) por cada voz marcada: esa voz soa destacada e as demais de fondo. Útil para que cada corda estude na casa.|Es crea un fitxer d'àudio (WAV) per cada veu marcada: aquesta veu sona destacada i les altres de fons. Útil perquè cada corda estudiï a casa.|Markatutako ahots bakoitzeko audio-fitxategi bat (WAV) sortzen da: ahots hori nabarmenduta entzuten da eta besteak atzean. Ahots-talde bakoitzak etxean ikasteko erabilgarria.
+Todas las voces por igual|Todas as voces por igual|Totes les veus per igual|Ahots guztiak berdin
+Resto de voces|Resto de voces|Resta de veus|Gainerako ahotsak
+Bajas (25 %)|Baixas (25 %)|Baixes (25 %)|Baxuak (% 25)
+Medias (40 %)|Medias (40 %)|Mitjanes (40 %)|Ertainak (% 40)
+Silenciadas|Silenciadas|Silenciades|Isilduta
+Entrada|Entrada|Entrada|Sarrera
+un compás de metrónomo antes de empezar|un compás de metrónomo antes de empezar|un compàs de metrònom abans de començar|metronomo-konpas bat hasi aurretik
+Crear audio|Crear audio|Crear àudio|Sortu audioa
+Tutti|Tutti|Tutti|Tutti
+Versiones guardadas|Versións gardadas|Versions desades|Gordetako bertsioak
+Se guardan en este navegador (no en la nube). Para llevarlas a otro equipo, descarga el .noa.|Gárdanse neste navegador (non na nube). Para levalas a outro equipo, descarga o .noa.|Es desen en aquest navegador (no al núvol). Per endur-te-les a un altre ordinador, descarrega el .noa.|Nabigatzaile honetan gordetzen dira (ez hodeian). Beste ordenagailu batera eramateko, deskargatu .noa.
+Abrir|Abrir|Obrir|Ireki
+Aún no hay versiones. Usa «Guardar versión» para crear un punto al que volver.|Aínda non hai versións. Usa «Gardar versión» para crear un punto ao que volver.|Encara no hi ha versions. Fes servir «Desar versió» per crear un punt on tornar.|Oraindik ez dago bertsiorik. Erabili «Gorde bertsioa» itzultzeko puntu bat sortzeko.
+Nombre de la versión:|Nome da versión:|Nom de la versió:|Bertsioaren izena:
+Se abrirá esta versión en lugar de la partitura actual. ¿Seguir?|Abrirase esta versión no canto da partitura actual. Seguir?|S'obrirà aquesta versió en lloc de la partitura actual. Continuar?|Bertsio hau irekiko da uneko partituraren ordez. Jarraitu?
+Ir al compás número:|Ir ao compás número:|Anar al compàs número:|Joan konpas zenbakira:
+Un pentagrama más pequeño deja ver más música en pantalla y en el PDF. En el móvil los compases por sistema se ajustan solos. Los saltos de sistema y página se ponen en las propiedades de cada compás.|Un pentagrama máis pequeno deixa ver máis música en pantalla e no PDF. No móbil os compases por sistema axústanse sós. Os saltos de sistema e páxina póñense nas propiedades de cada compás.|Un pentagrama més petit permet veure més música a la pantalla i al PDF. Al mòbil els compassos per sistema s'ajusten sols. Els salts de sistema i de pàgina es posen a les propietats de cada compàs.|Pentagrama txikiagoak musika gehiago ikusten uzten du pantailan eta PDFan. Mugikorrean konpasak sistemako berez egokitzen dira. Sistema- eta orri-jauziak konpas bakoitzaren propietateetan jartzen dira.
+Expandir: repartir acordes en pentagramas o voces|Expandir: repartir acordes en pentagramas ou voces|Expandir: repartir acords en pentagrames o veus|Zabaldu: akordeak pentagrametan edo ahotsetan banatu
+Unir: juntar pentagramas o voces en acordes|Unir: xuntar pentagramas ou voces en acordes|Unir: ajuntar pentagrames o veus en acords|Bateratu: pentagramak edo ahotsak akordeetan elkartu
+Expandir acordes a pentagramas|Expandir acordes a pentagramas|Expandir acords a pentagrames|Zabaldu akordeak pentagrametara
+Expandir acordes a voces|Expandir acordes a voces|Expandir acords a veus|Zabaldu akordeak ahotsetara
+Unir pentagramas en el superior|Unir pentagramas no superior|Unir pentagrames al superior|Bateratu pentagramak goikoan
+Unir voces en acordes|Unir voces en acordes|Unir veus en acords|Bateratu ahotsak akordeetan
+Expandir|Expandir|Expandir|Zabaldu
+Unir|Unir|Unir|Bateratu
+Partitura completa|Partitura completa|Partitura completa|Partitura osoa
+Particol en la nube|Particol na nube|Particol al núvol|Particol hodeian
+Entrar en Particol|Entrar en Particol|Entrar a Particol|Sartu Particol-en
+Te enviamos un enlace al correo para entrar, sin contraseña.|Enviámosche unha ligazón ao correo para entrar, sen contrasinal.|T'enviem un enllaç al correu per entrar, sense contrasenya.|Esteka bat bidaliko dizugu posta elektronikora sartzeko, pasahitzik gabe.
+Correo|Correo|Correu|Posta elektronikoa
+Enviar enlace|Enviar ligazón|Enviar enllaç|Bidali esteka
+Escribe un correo válido|Escribe un correo válido|Escriu un correu vàlid|Idatzi baliozko helbide bat
+Mira tu correo y abre el enlace para entrar|Mira o teu correo e abre a ligazón para entrar|Mira el correu i obre l'enllaç per entrar|Begiratu zure posta eta ireki esteka sartzeko
+Entra con tu correo para abrir la partitura compartida|Entra co teu correo para abrir a partitura compartida|Entra amb el teu correu per obrir la partitura compartida|Sartu zure posta elektronikoarekin partekatutako partitura irekitzeko
+Conectada como|Conectada como|Connectada com a|Honela konektatuta:
+salir|saír|sortir|irten
+Partitura abierta|Partitura aberta|Partitura oberta|Partitura irekia
+Ahora mismo solo está en este equipo.|Agora mesmo só está neste equipo.|Ara mateix només és en aquest ordinador.|Oraintxe ordenagailu honetan bakarrik dago.
+Subir a la nube|Subir á nube|Pujar al núvol|Igo hodeira
+Tus partituras|As túas partituras|Les teves partitures|Zure partiturak
+Aún no tienes partituras en la nube.|Aínda non tes partituras na nube.|Encara no tens partitures al núvol.|Oraindik ez duzu partiturarik hodeian.
+tuya|túa|teva|zurea
+compartida contigo|compartida contigo|compartida amb tu|zurekin partekatua
+Borrar de la nube|Borrar da nube|Esborrar del núvol|Ezabatu hodeitik
+Compartir…|Compartir…|Compartir…|Partekatu…
+Guardar versión en la nube|Gardar versión na nube|Desar versió al núvol|Gorde bertsioa hodeian
+Versiones…|Versións…|Versions…|Bertsioak…
+Trabajar sin nube|Traballar sen nube|Treballar sense núvol|Hodeirik gabe lan egin
+Solo lectura|Só lectura|Només lectura|Irakurtzeko soilik
+Es tuya|É túa|És teva|Zurea da
+Puedes editarla|Podes editala|La pots editar|Edita dezakezu
+Compartir partitura|Compartir partitura|Compartir partitura|Partekatu partitura
+Quien abra el enlace, después de entrar con su correo, queda añadido a la partitura.|Quen abra a ligazón, despois de entrar co seu correo, queda engadido á partitura.|Qui obri l'enllaç, després d'entrar amb el seu correu, queda afegit a la partitura.|Esteka irekitzen duena, bere posta elektronikoarekin sartu ondoren, partiturari gehitzen zaio.
+Copiar enlace para editar|Copiar ligazón para editar|Copiar enllaç per editar|Kopiatu esteka editatzeko
+Copiar enlace de solo lectura|Copiar ligazón de só lectura|Copiar enllaç només de lectura|Kopiatu irakurtzeko soilik den esteka
+Anular enlaces enviados|Anular ligazóns enviadas|Anul·lar enllaços enviats|Baliogabetu bidalitako estekak
+Quitar el acceso a todas las personas|Quitar o acceso a todas as persoas|Treure l'accés a totes les persones|Kendu sarbidea pertsona guztiei
+Enlace copiado: envíalo a quien quieras|Ligazón copiada: envíaa a quen queiras|Enllaç copiat: envia'l a qui vulguis|Esteka kopiatuta: bidali nahi duzunari
+Los enlaces anteriores ya no sirven|As ligazóns anteriores xa non serven|Els enllaços anteriors ja no serveixen|Aurreko estekek ez dute balio jada
+Acceso retirado|Acceso retirado|Accés retirat|Sarbidea kenduta
+Versiones en la nube|Versións na nube|Versions al núvol|Bertsioak hodeian
+Aún no hay versiones de esta partitura.|Aínda non hai versións desta partitura.|Encara no hi ha versions d'aquesta partitura.|Partitura honek oraindik ez du bertsiorik.
+Restaurar|Restaurar|Restaurar|Leheneratu
+La partitura volverá a esta versión para todas las personas. ¿Seguir?|A partitura volverá a esta versión para todas as persoas. Seguir?|La partitura tornarà a aquesta versió per a totes les persones. Continuar?|Partitura bertsio honetara itzuliko da pertsona guztientzat. Jarraitu?
+Partitura en la nube|Partitura na nube|Partitura al núvol|Partitura hodeian
+Sigues con la partitura en este equipo, sin nube|Segues coa partitura neste equipo, sen nube|Continues amb la partitura en aquest ordinador, sense núvol|Partiturarekin jarraitzen duzu ordenagailu honetan, hodeirik gabe
+Sesión cerrada|Sesión pechada|Sessió tancada|Saioa itxita
+La partitura es demasiado grande para la nube|A partitura é demasiado grande para a nube|La partitura és massa gran per al núvol|Partitura handiegia da hodeirako
+La partitura supera el tamaño máximo de la nube|A partitura supera o tamaño máximo da nube|La partitura supera la mida màxima del núvol|Partiturak hodeiaren gehienezko tamaina gainditzen du
+Nube no configurada|Nube non configurada|Núvol no configurat|Hodeia konfiguratu gabe
+Entrar en la nube|Entrar na nube|Entrar al núvol|Sartu hodeian
+Nube: partitura solo en este equipo|Nube: partitura só neste equipo|Núvol: partitura només en aquest ordinador|Hodeia: partitura ordenagailu honetan bakarrik
+Cambios sin guardar en la nube…|Cambios sen gardar na nube…|Canvis sense desar al núvol…|Hodeian gorde gabeko aldaketak…
+Guardando en la nube…|Gardando na nube…|Desant al núvol…|Hodeian gordetzen…
+Guardado en la nube|Gardado na nube|Desat al núvol|Hodeian gordeta
+Error al guardar en la nube|Erro ao gardar na nube|Error en desar al núvol|Errorea hodeian gordetzean
+Esta copia de Particol no está conectada a la nube. Para activarla, rellena|Esta copia de Particol non está conectada á nube. Para activala, enche|Aquesta còpia de Particol no està connectada al núvol. Per activar-la, omple|Particol-en kopia hau ez dago hodeiari konektatuta. Aktibatzeko, bete
+con la dirección y la clave pública de Supabase (lo explica el README).|coa dirección e a clave pública de Supabase (explícao o README).|amb l'adreça i la clau pública de Supabase (ho explica el README).|Supabaseren helbidearekin eta gako publikoarekin (README-k azaltzen du).
+Partitura completa|Partitura completa|Partitura completa|Partitura osoa
+partitura colaborativa|partitura colaborativa|partitura col·laborativa|partitura kolaboratiboa
+Particol — partitura colaborativa|Particol — partitura colaborativa|Particol — partitura col·laborativa|Particol — partitura kolaboratiboa
+Buscar comando… (p. ej. trino, transportar, PDF)|Buscar comando… (p. ex. trino, transportar, PDF)|Cercar ordre… (p. ex. trinat, transportar, PDF)|Bilatu agindua… (adib. trinoa, transposatu, PDF)
+Selección|Selección|Selecció|Hautapena
+compases|compases|compassos|konpas
+modo acorde|modo acorde|mode acord|akorde modua
+pentagrama(s)|pentagrama(s)|pentagrama(es)|pentagrama
+(tresillo)|(tresillo)|(tresset)|(hirukotea)
+Do M / La m|Do M / La m|Do M / La m|Do M / La m
+Pentagrama|Pentagrama|Pentagrama|Pentagrama
+Parte|Parte|Particel·la|Zatia
+Añadir|Engadir|Afegir|Gehitu
+Cerrar|Pechar|Tancar|Itxi
+Captura cancelada|Captura cancelada|Captura cancel·lada|Kaptura bertan behera utzita
+Sin grupo irregular|Sen grupo irregular|Sense grup irregular|Talde irregularrik gabe
+Grupo irregular desactivado|Grupo irregular desactivado|Grup irregular desactivat|Talde irregularra desaktibatuta
+Modo acorde desactivado|Modo acorde desactivado|Mode acord desactivat|Akorde modua desaktibatuta
+Bucle desactivado|Bucle desactivado|Bucle desactivat|Begizta desaktibatuta
+Metrónomo activado|Metrónomo activado|Metrònom activat|Metronomoa aktibatuta
+Metrónomo desactivado|Metrónomo desactivado|Metrònom desactivat|Metronomoa desaktibatuta
+Sonidos reales|Sons reais|Sons reals|Benetako soinuak
+Sintetizador|Sintetizador|Sintetitzador|Sintetizadorea
+Vista de páginas|Vista de páxinas|Vista de pàgines|Orrien ikuspegia
+Vista continua|Vista continua|Vista contínua|Ikuspegi jarraitua
+Con compás de entrada|Con compás de entrada|Amb compàs d'entrada|Sarrera-konpasarekin
+Sin compás de entrada|Sen compás de entrada|Sense compàs d'entrada|Sarrera-konpasik gabe
+Agrupación automática activada|Agrupación automática activada|Agrupació automàtica activada|Taldekatze automatikoa aktibatuta
+Agrupación automática desactivada|Agrupación automática desactivada|Agrupació automàtica desactivada|Taldekatze automatikoa desaktibatuta
+Metrónomo con subdivisión|Metrónomo con subdivisión|Metrònom amb subdivisió|Metronomoa azpizatiketarekin
+Metrónomo solo en los pulsos|Metrónomo só nos pulsos|Metrònom només a les pulsacions|Metronomoa pultsuetan soilik
+Sin nombres de nota|Sen nomes de nota|Sense noms de nota|Noten izenik gabe
+Nombres de nota: Do Re Mi|Nomes de nota: Do Re Mi|Noms de nota: Do Re Mi|Noten izenak: Do Re Mi
+Nombres de nota: C D E|Nomes de nota: C D E|Noms de nota: C D E|Noten izenak: C D E
+Sin trémolo|Sen trémolo|Sense trèmolo|Tremolorik gabe
+Repetición de compás quitada|Repetición de compás quitada|Repetició de compàs treta|Konpas-errepikapena kenduta
+Repetición de compás: suena el compás anterior|Repetición de compás: soa o compás anterior|Repetició de compàs: sona el compàs anterior|Konpas-errepikapena: aurreko konpasa entzuten da
+Comprobación de tesitura desactivada|Comprobación de tesitura desactivada|Comprovació de tessitura desactivada|Tesitura-egiaztapena desaktibatuta
+Tesitura: las notas fuera del registro cómodo se ven en rojo|Tesitura: as notas fóra do rexistro cómodo vense en vermello|Tessitura: les notes fora del registre còmode es veuen en vermell|Tesitura: erregistro erosotik kanpoko notak gorriz ikusten dira
+Todo estaba ya agrupado según el compás|Todo estaba xa agrupado segundo o compás|Tot ja estava agrupat segons el compàs|Dena konpasaren arabera taldekatuta zegoen jada
+Acordes repartidos en pentagramas|Acordes repartidos en pentagramas|Acords repartits en pentagrames|Akordeak pentagrametan banatuta
+Acordes repartidos en voces|Acordes repartidos en voces|Acords repartits en veus|Akordeak ahotsetan banatuta
+No hay acordes que expandir en la selección|Non hai acordes que expandir na selección|No hi ha acords per expandir a la selecció|Hautapenean ez dago zabaltzeko akorderik
+Nada que unir|Nada que unir|Res per unir|Ez dago ezer bateratzeko
+Todo|Todo|Tot|Dena
+compás completo|compás completo|compàs complet|konpasa beteta
+Octava abajo|Oitava abaixo|Octava avall|Zortzidun bat behera
+Octava arriba|Oitava arriba|Octava amunt|Zortzidun bat gora
+Copia este enlace:|Copia esta ligazón:|Copia aquest enllaç:|Kopiatu esteka hau:
+Cifrado (C, Am7, F#m7b5, Bb/D… o Do, Lam7, Sib/Re). Vacío para quitar:|Cifrado (C, Am7, F#m7b5, Bb/D… ou Do, Lam7, Sib/Re). Baleiro para quitar:|Xifrat (C, Am7, F#m7b5, Bb/D… o Do, Lam7, Sib/Re). Buit per treure'l:|Zifratua (C, Am7, F#m7b5, Bb/D… edo Do, Lam7, Sib/Re). Hutsik kentzeko:
+Digitación (por ejemplo 1, 3 o 1-3-5). Vacío para quitar:|Dixitación (por exemplo 1, 3 ou 1-3-5). Baleiro para quitar:|Digitació (per exemple 1, 3 o 1-3-5). Buit per treure-la:|Hatzkada (adibidez 1, 3 edo 1-3-5). Hutsik kentzeko:
+Texto de expresión (dolce, rit., a tempo…). Vacío para quitar:|Texto de expresión (dolce, rit., a tempo…). Baleiro para quitar:|Text d'expressió (dolce, rit., a tempo…). Buit per treure'l:|Adierazpen-testua (dolce, rit., a tempo…). Hutsik kentzeko:
+¿Quitar este pentagrama y todo su contenido?|Quitar este pentagrama e todo o seu contido?|Treure aquest pentagrama i tot el seu contingut?|Kendu pentagrama hau eta haren eduki guztia?
+¿Borrar esta partitura de la nube para todas las personas?|Borrar esta partitura da nube para todas as persoas?|Esborrar aquesta partitura del núvol per a totes les persones?|Ezabatu partitura hau hodeitik pertsona guztientzat?
+¿Quitar el acceso a todas las personas con las que compartiste esta partitura?|Quitar o acceso a todas as persoas coas que compartiches esta partitura?|Treure l'accés a totes les persones amb qui has compartit aquesta partitura?|Kendu sarbidea partitura hau partekatu duzun pertsona guztiei?
+fuera de tesitura|fóra de tesitura|fora de tessitura|tesituratik kanpo
+Violín I|Violín I|Violí I|I. biolina
+Violín II|Violín II|Violí II|II. biolina
+`;
+const I18N = {}; I18N_SRC.trim().split('\n').forEach(l=>{ const a=l.split('|'); if(a.length===4) I18N[a[0]]={gl:a[1],ca:a[2],eu:a[3]}; });
+/* textos con partes variables */
+const I18N_PAT = [
+  [/^Voz (\d) \(plicas (arriba|abajo)\)$/, {gl:(v,d)=>`Voz ${v} (plicas ${d==='arriba'?'arriba':'abaixo'})`, ca:(v,d)=>`Veu ${v} (pliques ${d==='arriba'?'amunt':'avall'})`, eu:(v,d)=>`${v}. ahotsa (zurtoinak ${d==='arriba'?'gora':'behera'})`}],
+  [/^Voz (\d)(.*)$/, {gl:(v,r)=>`Voz ${v}${tr(r)}`, ca:(v,r)=>`Veu ${v}${tr(r)}`, eu:(v,r)=>`${v}. ahotsa${tr(r)}`}],
+  [/^Dinámica (\S+)$/, {gl:d=>`Dinámica ${d}`, ca:d=>`Dinàmica ${d}`, eu:d=>`${d} dinamika`}],
+  [/^Estrofa (\d)$/, {gl:k=>`Estrofa ${k}`, ca:k=>`Estrofa ${k}`, eu:k=>`${k}. ahapaldia`}],
+  [/^Estilo: (.+)$/, {gl:s=>`Estilo: ${tr(s)}`, ca:s=>`Estil: ${tr(s)}`, eu:s=>`Estiloa: ${tr(s)}`}],
+  [/^Parte: (.+)$/, {gl:s=>`Parte: ${s}`, ca:s=>`Particel·la: ${s}`, eu:s=>`Zatia: ${s}`}],
+  [/^Pentagrama (\d+)$/, {gl:n=>`Pentagrama ${n}`, ca:n=>`Pentagrama ${n}`, eu:n=>`${n}. pentagrama`}],
+  [/^Añadir (.+) por encima$/, {gl:s=>`Engadir ${s==='octava'?'oitava':s} por riba`, ca:s=>`Afegir ${s==='octava'?'octava':s.replace('ª','a')} per sobre`, eu:s=>`Gehitu ${s==='octava'?'zortziduna':s.replace('ª','.')} gainean`}],
+  [/^(Dosillo|Tresillo|Cuatrillo|Quintillo|Seisillo|Septillo) \((\d+:\d+)\)$/, {gl:(n,r)=>`${tr(n)} (${r})`, ca:(n,r)=>`${tr(n)} (${r})`, eu:(n,r)=>`${tr(n)} (${r})`}],
+  [/^(Dosillo|Tresillo|Cuatrillo|Quintillo|Seisillo|Septillo): las próximas notas irán agrupadas$/, {gl:n=>`${tr(n)}: as próximas notas irán agrupadas`, ca:n=>`${tr(n)}: les properes notes aniran agrupades`, eu:n=>`${tr(n)}: hurrengo notak taldekatuta joango dira`}],
+  [/^(.+) \(por defecto\)$/, {gl:s=>`${s} (por defecto)`, ca:s=>`${s} (per defecte)`, eu:s=>`${s} (lehenetsia)`}],
+  [/^Compás (\d+)$/, {gl:n=>`Compás ${n}`, ca:n=>`Compàs ${n}`, eu:n=>`${n}. konpasa`}],
+  [/^Clave · (.+)$/, {gl:s=>`Clave · ${s}`, ca:s=>`Clau · ${s}`, eu:s=>`Giltza · ${s}`}],
+  [/^Trémolo de (\d) barra\(s\)$/, {gl:n=>`Trémolo de ${n} barra(s)`, ca:n=>`Trèmolo de ${n} barra(es)`, eu:n=>`${n} barrako tremoloa`}],
+  [/^Copiado: (\d+) compás\(es\) × (\d+) pentagrama\(s\)$/, {gl:(a,b)=>`Copiado: ${a} compás(es) × ${b} pentagrama(s)`, ca:(a,b)=>`Copiat: ${a} compàs(os) × ${b} pentagrama(es)`, eu:(a,b)=>`Kopiatuta: ${a} konpas × ${b} pentagrama`}],
+  [/^No se pudo (abrir|guardar en la nube|subir|leer):? ?(.*)$/, {gl:(a,r)=>`Non se puido ${({abrir:'abrir','guardar en la nube':'gardar na nube',subir:'subir',leer:'ler'})[a]}${r?': '+r:''}`, ca:(a,r)=>`No s'ha pogut ${({abrir:'obrir','guardar en la nube':'desar al núvol',subir:'pujar',leer:'llegir'})[a]}${r?': '+r:''}`, eu:(a,r)=>`Ezin izan da ${({abrir:'ireki','guardar en la nube':'hodeian gorde',subir:'igo',leer:'irakurri'})[a]}${r?': '+r:''}`}],
+  [/^Versión abierta: (.+)$/, {gl:s=>`Versión aberta: ${s}`, ca:s=>`Versió oberta: ${s}`, eu:s=>`Bertsioa irekita: ${s}`}],
+  [/^(Solo lectura · )?Abierta desde la nube$/, {gl:r=>`${r?'Só lectura · ':''}Aberta desde a nube`, ca:r=>`${r?'Només lectura · ':''}Oberta des del núvol`, eu:r=>`${r?'Irakurtzeko soilik · ':''}Hodeitik irekita`}],
+  [/^Compás completo: no cabe una (.+)$/, {gl:s=>`Compás completo: non cabe unha ${tr(s)}`, ca:s=>`Compàs complet: no hi cap una ${tr(s)}`, eu:s=>`Konpasa beteta: ${tr(s)} ez da sartzen`}],
+  [/^(.+) · c\. (\d+) · voz (\d)$/, {gl:(a,m,v)=>`${tr(a)} · c. ${m} · voz ${v}`, ca:(a,m,v)=>`${tr(a)} · c. ${m} · veu ${v}`, eu:(a,m,v)=>`${tr(a)} · ${m}. k. · ${v}. ahotsa`}],
+  [/^Selección · c\. (\d+)–(\d+)$/, {gl:(a,b)=>`Selección · c. ${a}–${b}`, ca:(a,b)=>`Selecció · c. ${a}–${b}`, eu:(a,b)=>`Hautapena · ${a}–${b}. k.`}],
+];
+function tr(s){
+  if(typeof s!=='string' || settings.lang==='es' || !s) return s;
+  const L=settings.lang||'gl', m=s.match(/^(\s*)([\s\S]*?)(\s*)$/), core=m[2]; if(!core) return s;
+  const e=I18N[core]; if(e && e[L]) return m[1]+e[L]+m[3];
+  for(const [re,f] of I18N_PAT){ const r=core.match(re); if(r && f[L]) return m[1]+f[L](...r.slice(1))+m[3]; }
+  const sfx=core.match(/^([\s\S]*?)( \([^()]*\))$/); if(sfx){ const b=I18N[sfx[1]]; if(b && b[L]) return m[1]+b[L]+sfx[2]+m[3]; }
+  return s;
+}
+/* traductor de la interfaz: guarda el original en castellano para poder cambiar de idioma */
+const I18N_SKIP = '#pages, #printArea, #measure, #metaHold, .lyr-in, .vinfo b, script, style, svg.mus';
+const ATTRS = ['title','placeholder','aria-label'];
+function trNode(n){
+  if(n.nodeType===3){ const p=n.parentElement; if(!p || p.closest(I18N_SKIP)) return;
+    if(n._es===undefined || (n.nodeValue!==n._tr)) n._es=n.nodeValue;
+    const t=tr(n._es); n._tr=t; if(n.nodeValue!==t) n.nodeValue=t; return; }
+  if(n.nodeType!==1 || n.closest(I18N_SKIP)) return;
+  ATTRS.forEach(a=>{ if(!n.hasAttribute(a)) return; const k='_es_'+a, v=n.getAttribute(a);
+    if(n[k]===undefined || v!==n['_tr_'+a]) n[k]=v; const t=tr(n[k]); n['_tr_'+a]=t; if(v!==t) n.setAttribute(a,t); });
+  if(n.tagName==='OPTION' || n.childNodes.length) n.childNodes.forEach(trNode);
+}
+let i18nObs=null;
+function initI18n(){
+  settings.lang = settings.lang || 'gl';
+  document.documentElement.lang = settings.lang;
+  trNode(document.body);
+  i18nObs=new MutationObserver(ms=>{ i18nObs.disconnect();
+    ms.forEach(m=>{ if(m.type==='childList') m.addedNodes.forEach(trNode); else if(m.type==='characterData') trNode(m.target); else if(m.type==='attributes') trNode(m.target); });
+    i18nObs.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTRS}); });
+  i18nObs.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTRS});
+  document.title = tr('Particol — partitura colaborativa');
+}
+function setLang(l){ settings.lang=l; saveSettings(); document.documentElement.lang=l; trNode(document.body); document.title=tr('Particol — partitura colaborativa'); refreshTools(); if(P) status(); }
+function openLangDlg(){
+  const box=dlg('Idioma de la aplicación', `<div class="stylelist">${Object.entries(LANGS).map(([k,n])=>`<button class="stylecard ${settings.lang===k?'on':''}" data-lang="${k}"><span>${n}</span></button>`).join('')}</div>`, null);
+  box.addEventListener('click', e=>{ const b=e.target.closest('[data-lang]'); if(!b) return; setLang(b.dataset.lang); box.querySelectorAll('[data-lang]').forEach(x=>x.classList.toggle('on',x===b)); });
+}
+
+/* diálogos nativos del navegador también traducidos */
+if(typeof window!=='undefined' && window.prompt){ const _p=window.prompt.bind(window), _c=window.confirm.bind(window); window.prompt=(m,d)=>_p(tr(m),d); window.confirm=m=>_c(tr(m)); }
 /* ---------- registro de herramientas (panel, dock, hoja, paleta) ---------- */
 const T={};
 const tl=(id,d)=>{ T[id]=d; };
@@ -2485,6 +3111,7 @@ tl('inspector',{i:'i-inspect',t:'Inspector de propiedades',k:'F8',cat:'Vista',ru
 tl('mrep',{i:'i-mrep',t:'Repetición de compás (𝄎): repite el anterior',cat:'Compás',run:toggleMeasRepeat,on:()=>!!(sel&&P.parts[sel.p].mrep&&P.parts[sel.p].mrep[sel.m])});
 tl('styles',{i:'i-pen',t:'Estilo de escritura (grabado o manuscrito)',cat:'Vista',modal:1,run:()=>openStyleDlg()});
 tl('cloud',{i:'i-cloud',t:'Nube: entrar, tus partituras, compartir',cat:'Archivo',modal:1,run:()=>openCloudDlg()});
+tl('lang',{i:'i-globe',t:'Idioma',cat:'Vista',modal:1,run:()=>openLangDlg()});
 tl('instr',{i:'i-instr',t:'Instrumentos y pentagramas',k:'Ctrl+I',cat:'Partitura',modal:1,run:()=>openInstruments()});
 tl('transp',{i:'i-transpose',t:'Transportar',cat:'Partitura',modal:1,run:()=>openTranspose()});
 tl('page',{i:'i-page',t:'Vista de páginas / continua',cat:'Vista',run:togglePageView,on:()=>view.page});
@@ -2516,7 +3143,7 @@ const GROUPS=[
 const DOCK=[['w','h','q','8','16','dot','rest','sharp','flat','natural','chord','tie','tup','v1','v2','v3','v4'],['play','up','down','left','right','del','undo','redo','lyric','piano','mic','more']];
 const SHEET=[['Escritura',['v1','v2','v3','v4','explode','implode','ott8va','ott8vb','grace','32','tup2','tup4','tup5','tup6','dsharp','dflat','copy','cut','paste','selAll']],['Articulación y ornamentos',['stacc','stacciss','accent','marcato','tenuto','fermata','trill','mordent','turn','arp','trem','fing']],
   ['Expresión',['ppp','pp','p','mp','mf','f','ff','fff','sf','sfz','fp','cresc','dim','slur','text','harm','verse']],['Barras',['bAuto','bNone','bStart','bJoin','regroup','autoGroup']],['Compás',['addM','insM','delM','measProps','mrep','repS','repE']],
-  ['Partitura y sonido',['instr','transp','page','mixer','loop','metro','metroSub','countIn','mic','samples','preview','palette']],['Vista',['zout','zfit','zin','styles','inspector','layout','names','colors','theme','darkPaper','rangeChk','goto']],['Archivo',['cloud','new','open','save','saveVer','versions','camera','xml','mid','pdf','pdfParts','rehearsal']]];
+  ['Partitura y sonido',['instr','transp','page','mixer','loop','metro','metroSub','countIn','mic','samples','preview','palette']],['Vista',['zout','zfit','zin','lang','styles','inspector','layout','names','colors','theme','darkPaper','rangeChk','goto']],['Archivo',['cloud','new','open','save','saveVer','versions','camera','xml','mid','pdf','pdfParts','rehearsal']]];
 function btnHTML(id){ const d=T[id]; if(!d) return '';
   const inner = d.g ? `<span class="glyph" data-glyph="${d.g}"></span>` : d.i ? `<svg class="ic"><use href="#${d.i}"/></svg>` : `<span class="tx">${d.txt}</span>`;
   const kb = d.k && d.k.length<=2 ? `<kbd>${d.k}</kbd>` : '';
@@ -2538,10 +3165,10 @@ function sheet(on){ $('sheet').classList.toggle('show',on); $('sheetBg').classLi
 function saveSettings(){ try{ localStorage.setItem('particol.settings', JSON.stringify(settings)); }catch(e){} }
 function setTheme(t){ document.documentElement.dataset.theme=t; document.querySelectorAll('[data-tool=theme] use').forEach(u=>u.setAttribute('href', t==='light'?'#i-moon':'#i-sun')); try{ localStorage.setItem('noa.theme',t); }catch(e){} }
 function status(){ if(!P) return; let t; const n=selNote();
-  if(range) t=`<b>Selección</b> · c. ${range.m0+1}–${range.m1+1} · ${range.p1-range.p0+1} pentagrama(s)`;
+  if(range) t=`<b>${tr('Selección')}</b> · c. ${range.m0+1}–${range.m1+1} · ${range.p1-range.p0+1} ${tr('pentagrama(s)')}`;
   else if(n){ const part=P.parts[sel.p], a=n.rest?[]:altsFor(sel.p,sel.v,sel.m)[sel.n];
-    t=`<b>c. ${sel.m+1}</b> · ${part.name||'pentagrama '+(sel.p+1)}${extraVoices(part)||sel.v?' · voz '+(sel.v+1):''} · <b>${n.rest?'silencio':pitchesOf(n).map((q,j)=>pname(q,a[j])).join(' ')}</b> · ${DUR_NAMES[n.dur]}${n.dots?' con puntillo':''}${n.tup?' (tresillo)':''}`; }
-  else { const k=KEYS.find(x=>x[0]===P.keySig); t=`${nM()} compases · ${P.timeSig.num}/${P.timeSig.den} · ${k?k[1]:P.keySig} · voz ${tool.voice+1}${tool.chord?' · <b>modo acorde</b>':''}`; }
+    t=`<b>c. ${sel.m+1}</b> · ${part.name||tr('Pentagrama')+' '+(sel.p+1)}${extraVoices(part)||sel.v?' · '+tr('voz')+' '+(sel.v+1):''} · <b>${n.rest?tr('silencio'):pitchesOf(n).map((q,j)=>pname(q,a[j])).join(' ')}</b> · ${tr(DUR_NAMES[n.dur])}${n.dots?' '+tr('con puntillo'):''}${n.tup?' '+tr('(tresillo)'):''}`; }
+  else { const k=KEYS.find(x=>x[0]===P.keySig); t=`${nM()} ${tr('compases')} · ${P.timeSig.num}/${P.timeSig.den} · ${k?k[1]:P.keySig} · ${tr('voz')} ${tool.voice+1}${tool.chord?' · <b>'+tr('modo acorde')+'</b>':''}`; }
   $('status').innerHTML=t; $('mstatus').innerHTML=t; }
 
 /* ---------- diálogos ---------- */
@@ -2645,7 +3272,7 @@ function openInstruments(){
     if(b.dataset.a==='rm'){ if(draft[i].src!==null && !confirm('¿Quitar este pentagrama y todo su contenido?')) return; draft.splice(i,1); }
     draw(); });
   box.querySelector('#insAddBtn').onclick=()=>{ const ins=INSTR_BY[box.querySelector('#insAdd').value];
-    draft.push({src:null, name:ins.name, short:ins.short, clef:ins.clef, prog:ins.prog, inst:ins.id, oct:ins.oct||0, brace:!!ins.pair, staff:ins.staff||''});
+    draft.push({src:null, name:tr(ins.name), short:ins.short, clef:ins.clef, prog:ins.prog, inst:ins.id, oct:ins.oct||0, brace:!!ins.pair, staff:ins.staff||''});
     if(ins.pair) draft.push({src:null, name:'', short:'', clef:ins.pair, prog:ins.prog, inst:ins.id, oct:0, brace:false});
     draw(); };
 }
@@ -2665,7 +3292,7 @@ const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 function openPalette(){ $('pal').hidden=false; const inp=$('palIn'); inp.value=''; palIdx=0; drawPalette(); setTimeout(()=>inp.focus(),0); }
 function closePalette(){ $('pal').hidden=true; }
 function drawPalette(){ const q=norm($('palIn').value.trim());
-  palItems=Object.entries(T).filter(([id,d])=>id!=='palette'&&id!=='more' && (!q || norm(d.t+' '+(d.cat||'')).includes(q))).slice(0,60);
+  palItems=Object.entries(T).filter(([id,d])=>id!=='palette'&&id!=='more' && (!q || norm(tr(d.t)+' '+d.t+' '+tr(d.cat||'')+' '+(d.cat||'')).includes(q))).slice(0,60);
   palIdx=Math.min(palIdx,Math.max(0,palItems.length-1));
   $('palList').innerHTML=palItems.map(([id,d],i)=>`<li class="${i===palIdx?'act':''}" data-id="${id}"><span class="pc">${d.cat||''}</span><span class="pt">${d.t}</span>${d.on&&P&&d.on()?'<span class="pon">●</span>':''}${d.k?`<kbd>${d.k}</kbd>`:''}</li>`).join('');
   const a=$('palList').querySelector('.act'); if(a) a.scrollIntoView({block:'nearest'}); }
@@ -2769,7 +3396,7 @@ function initUI(){
   KEYS.forEach(k=>$('nKey').insertAdjacentHTML('beforeend',opt(k[0],k[1])));
   document.addEventListener('click', e=>{ const b=e.target.closest('[data-tool]'); if(!b) return; const d=T[b.dataset.tool]; if(!d) return;
     if(b.closest('#sheet') && d.modal) sheet(false); if(b.closest('#exportMenu')) $('exportMenu').classList.remove('open');
-    if(!P && !['cloud','new','open','theme','palette','more','piano','samples','preview','metro','loop','darkPaper','rangeChk','names','colors','versions'].includes(b.dataset.tool)) return; d.run(); });
+    if(!P && !['lang','cloud','new','open','theme','palette','more','piano','samples','preview','metro','loop','darkPaper','rangeChk','names','colors','versions'].includes(b.dataset.tool)) return; d.run(); });
   $('nCancel').onclick=()=>{ if(P) $('newModal').hidden=true; };
   $('nCreate').onclick=()=>{ newProject({title:$('nTitle').value.trim()||'Sin título', template:$('nTemplate').value, num:+$('nNum').value||4, den:+$('nDen').value, key:$('nKey').value, measures:Math.max(1,+$('nMeasures').value||8), tempo:+$('nTempo').value||100, pickup:+$('nPick').value||0, shortenLast:$('nShort').checked}); $('newModal').hidden=true; };
   $('fileOpen').onchange=e=>{ if(e.target.files[0]) openFile(e.target.files[0]); e.target.value=''; $('newModal').hidden=true; };
@@ -2794,7 +3421,7 @@ function initUI(){
   let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ if(P) render(); if(pianoOn) buildPiano(); },120); });
   try{ settings=Object.assign(settings, JSON.parse(localStorage.getItem('particol.settings')||'{}')); }catch(e){}
   try{ setTheme(localStorage.getItem('noa.theme')||'dark'); const zz=parseFloat(localStorage.getItem('noa.zoom')); if(zz){ Z=zz; zoomAuto=false; } }catch(e){}
-  initPanel(); initMIDI(); initCapture(); initInspector(); initCloud();
+  initPanel(); initMIDI(); initCapture(); initInspector(); initCloud(); initI18n();
   let saved=null; try{ saved=JSON.parse(localStorage.getItem('noa.autosave')); }catch(e){}
   if(saved && saved.format==='noa'){ $('newModal').hidden=true; try{ loadProject(saved); }catch(e){ console.error(e); $('newModal').hidden=false; } }
   refreshTools();
