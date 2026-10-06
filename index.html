@@ -305,6 +305,25 @@ header .brand > span:not(.logo-slot){font-weight:800;letter-spacing:-.02em}
 [data-tool=cloud][data-state=in]::before{background:var(--faint)}
 [data-tool=cloud][data-peers]:not([data-peers=""])::after{content:attr(data-peers);position:absolute;right:-2px;top:-2px;min-width:15px;height:15px;border-radius:8px;background:var(--accent);color:#fff;font:600 10px var(--sans);display:grid;place-items:center;padding:0 3px}
 
+#micPanel{position:fixed;right:16px;bottom:64px;width:250px;background:var(--rail-2);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.45);padding:10px 14px 14px;z-index:40}
+.mp-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.mp-note{text-align:center;font:800 44px 'Bricolage Grotesque',var(--sans);line-height:1.1}
+.mp-note small{font-size:18px;color:var(--muted);margin-left:2px}
+.mp-tuner{position:relative;height:26px;margin:6px 4px}
+.mp-scale{position:absolute;inset:11px 0 auto;height:4px;background:linear-gradient(90deg,#D9534F,#E0A030 30%,#3fbf7f 45% 55%,#E0A030 70%,#D9534F);border-radius:2px}
+#mpNeedle{position:absolute;top:2px;width:4px;height:22px;margin-left:-2px;border-radius:2px;background:var(--text);left:50%;transition:left .08s}
+#mpNeedle.ok{background:#3fbf7f}#mpNeedle.meh{background:#E0A030}#mpNeedle.bad{background:#D9534F}
+.mp-cents{text-align:center;color:var(--muted);font-size:12px;min-height:16px}
+.mp-level{height:5px;background:var(--rail);border-radius:3px;overflow:hidden;margin:8px 0}
+#mpLevel{height:100%;width:0;background:var(--accent);transition:width .06s}
+.mp-modes{justify-content:center;margin:6px 0}
+.mp-sens{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.mp-sens input{flex:1}
+#micPanel .hint{margin:8px 0 0}
+@media (max-width:640px){ #micPanel{left:10px;right:10px;width:auto;bottom:130px} }
+#errBadge,#errBadgeM{border:0;background:#C62828;color:#fff;font:600 12px var(--sans);border-radius:12px;padding:3px 9px;flex:none}
+#errBadgeM{position:fixed;right:10px;bottom:140px;z-index:41}
+
 </style>
 </head>
 <body>
@@ -428,7 +447,7 @@ header .brand > span:not(.logo-slot){font-weight:800;letter-spacing:-.02em}
 
   <main id="main"><div id="paperWrap"><div id="pages"></div></div></main>
   <div id="pianoBar" hidden></div>
-  <div id="dock"><div id="dockRows"></div><div id="mstatus"></div></div>
+  <div id="dock"><div id="dockRows"></div><div id="mstatus"></div><button id="errBadgeM" hidden onclick="openErrors()">⚠</button></div>
 
   <footer>
     <button data-tool="play"></button><button data-tool="stop"></button><button data-tool="loop"></button><button data-tool="metro"></button><button data-tool="metroSub"></button><button data-tool="countIn"></button>
@@ -438,7 +457,7 @@ header .brand > span:not(.logo-slot){font-weight:800;letter-spacing:-.02em}
     <button data-tool="piano"></button><button data-tool="mic"></button><button data-tool="samples"></button><button data-tool="preview"></button>
     <div class="sep"></div>
     <button data-tool="zout"></button><button id="zoomVal" title="Ajustar al ancho">100%</button><button data-tool="zin"></button>
-    <span id="status"></span><span id="midiDot" title="Teclado MIDI conectado"></span>
+    <button id="errBadge" hidden title="Ha ocurrido un error: pulsa para ver el informe" onclick="openErrors()">⚠</button><span id="status"></span><span id="midiDot" title="Teclado MIDI conectado"></span>
   </footer>
 </div>
 
@@ -1081,6 +1100,29 @@ function deleteSel(){
   if(!sel) return; snapshot(); const meas=M(sel);
   keepSound(sel.p,sel.v,sel.m,()=>meas.splice(sel.n,1));
   if(sel.n>0) sel.n--; else if(!meas.length) sel=null; render(); }
+/* ---------- informe de errores: para probar poco a poco ---------- */
+const APP_VERSION = '0.9 · 2026-10-04';
+const ERRS = [];
+function logErr(msg, stack){
+  if(/solo lectura/.test(msg||'')) return;                    // aviso intencionado, no es un fallo
+  ERRS.push({t:new Date().toLocaleTimeString(), msg:String(msg||'?').slice(0,300), stack:String(stack||'').split('\n').slice(0,4).join(' | ')});
+  if(ERRS.length>30) ERRS.shift();
+  ['errBadge','errBadgeM'].forEach(id=>{ const b=$(id); if(b){ b.hidden=false; b.textContent='⚠ '+ERRS.length; } });
+}
+window.addEventListener('error', e=>logErr(e.message, e.error&&e.error.stack));
+window.addEventListener('unhandledrejection', e=>logErr(e.reason&&e.reason.message||e.reason, e.reason&&e.reason.stack));
+function errReport(){
+  return `Particol ${APP_VERSION}\n${navigator.userAgent}\nPantalla: ${innerWidth}×${innerHeight} · idioma: ${settings.lang||'gl'} · nube: ${CLOUD.id?'sí':'no'}\n`
+    + (P? `Partitura: ${P.parts.length} pentagrama(s), ${nM()} compases\n` : '')
+    + ERRS.map((e,i)=>`${i+1}. [${e.t}] ${e.msg}\n   ${e.stack}`).join('\n');
+}
+function openErrors(){
+  const box=dlg('Informe de errores', `<p class="hint">Si algo ha fallado, copia este informe y mándamelo junto con lo que estabas haciendo.</p>
+    <textarea id="errTxt" readonly style="width:100%;height:220px;font:12px monospace;background:var(--rail);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px">${escH(errReport())}</textarea>
+    <div class="pair" style="margin-top:10px"><button class="btn primary" id="errCopy">Copiar informe</button><button class="btn" id="errClear">Vaciar</button></div>`, null);
+  box.querySelector('#errCopy').onclick=async()=>{ try{ await navigator.clipboard.writeText(errReport()); toast('Informe copiado'); }catch(e){ box.querySelector('#errTxt').select(); } };
+  box.querySelector('#errClear').onclick=()=>{ ERRS.length=0; ['errBadge','errBadgeM'].forEach(id=>{ const b=$(id); if(b) b.hidden=true; }); closeDlg(); };
+}
 /* ---------- maquetación y dibujo ---------- */
 const PAPER_W = () => isMobile()? 720 : 1040;
 const PAGE_H = w => Math.floor(w*1.414);
@@ -2084,39 +2126,75 @@ async function makeTracks(sel, tutti, bg, ci, msg, okBtn){
   okBtn.disabled=false;
 }
 
-/* ---------- dictado por micrófono (nota a nota) ---------- */
+/* ---------- dictado por micrófono y afinador ----------
+   Detector YIN (robusto ante errores de octava), calibración del ruido de la sala,
+   mediana de varias lecturas, y escritura de una nota nueva cuando la altura se estabiliza
+   en otra distinta (legato) o tras un ataque/silencio (notas repetidas). */
 let mic=null;
-function detectPitch(b, sr){
-  let rms=0; for(let i=0;i<b.length;i++) rms+=b[i]*b[i]; rms=Math.sqrt(rms/b.length); if(rms<.012) return null;
-  let r1=0, r2=b.length-1; const th=.2;
-  for(let i=0;i<b.length/2;i++) if(Math.abs(b[i])<th){ r1=i; break; }
-  for(let i=1;i<b.length/2;i++) if(Math.abs(b[b.length-i])<th){ r2=b.length-i; break; }
-  const x=b.subarray(r1,r2), n=x.length; if(n<64) return null; const c=new Float32Array(n);
-  for(let l=0;l<n;l++){ let s=0; for(let j=0;j<n-l;j++) s+=x[j]*x[j+l]; c[l]=s; }
-  let d=0; while(d<n-1 && c[d]>c[d+1]) d++;
-  let mx=-1, mp=-1; for(let i=d;i<n;i++) if(c[i]>mx){ mx=c[i]; mp=i; }
-  if(mp<=0||mp>=n-1) return null; let T=mp; const a=(c[T-1]+c[T+1]-2*c[T])/2, bb=(c[T+1]-c[T-1])/2; if(a) T-=bb/(2*a);
-  const f=sr/T; return f>55&&f<1400 ? f : null;
+function yinPitch(b, sr){
+  const N=b.length, H=N>>1; let rms=0; for(let i=0;i<N;i++) rms+=b[i]*b[i]; rms=Math.sqrt(rms/N);
+  const tmin=Math.max(2,Math.floor(sr/1300)), tmax=Math.min(H-2,Math.floor(sr/55)), d=new Float32Array(tmax+2);
+  for(let t=1;t<=tmax+1;t++){ let s=0; for(let i=0;i<H;i++){ const x=b[i]-b[i+t]; s+=x*x; } d[t]=s; }
+  let run=0; d[0]=1; for(let t=1;t<=tmax+1;t++){ run+=d[t]; d[t]= run? d[t]*t/run : 1; }
+  let tau=-1; for(let t=tmin;t<=tmax;t++){ if(d[t]<0.15){ while(t+1<=tmax && d[t+1]<d[t]) t++; tau=t; break; } }
+  if(tau<0){ let best=tmin; for(let t=tmin;t<=tmax;t++) if(d[t]<d[best]) best=t; if(d[best]<0.3) tau=best; else return {f:null,rms,clar:0}; }
+  const a=d[tau-1], c=d[tau+1], m=d[tau], den=a+c-2*m, t2 = den? tau+(a-c)/(2*den) : tau;
+  return {f: sr/t2, rms, clar: 1-m};
 }
+const detectPitch = (b, sr) => { const r=yinPitch(b,sr); return r.rms<.004? null : r.f; };   // compatibilidad
 async function toggleMic(){
-  if(mic){ stopMic(); return; }
-  if(!P){ return; }
+  if(mic){ stopMic(); return; } if(!P) return;
+  const cx=ac();                              // el audio se activa dentro del clic (Safari)
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-    const cx=ac(), src=cx.createMediaStreamSource(stream), an=cx.createAnalyser(); an.fftSize=2048; src.connect(an);
-    mic={stream, an, buf:new Float32Array(1024), cand:null, since:0, armed:true, quiet:0, timer:0};
-    mic.timer=setInterval(micTick, 45); refreshTools();
-    toast('🎤 Canta o toca una nota y mantenla: se escribe con la figura elegida. Haz una pequeña pausa entre notas.');
+    const src=cx.createMediaStreamSource(stream), hp=cx.createBiquadFilter(), an=cx.createAnalyser();
+    hp.type='highpass'; hp.frequency.value=50; an.fftSize=2048; src.connect(hp); hp.connect(an);
+    mic={stream, an, buf:new Float32Array(2048), hist:[], floor:[], thr:.01, quiet:9, last:null, smooth:0, ticks:0, mode:settings.micMode||'write', sens:settings.micSens||3};
+    mic.timer=setInterval(micTick, 40); buildMicPanel(); refreshTools();
   }catch(e){ toast('No hay acceso al micrófono'); }
 }
-function stopMic(){ if(!mic) return; clearInterval(mic.timer); mic.stream.getTracks().forEach(t=>t.stop()); mic=null; refreshTools(); status(); toast('Micrófono apagado'); }
+function stopMic(){ if(!mic) return; clearInterval(mic.timer); mic.stream.getTracks().forEach(t=>t.stop()); mic=null; const p=$('micPanel'); if(p) p.remove(); refreshTools(); status(); toast('Micrófono apagado'); }
+function buildMicPanel(){
+  const p=document.createElement('div'); p.id='micPanel';
+  p.innerHTML=`<div class="mp-h"><b>Micrófono</b><button class="iconbtn" data-m="close" aria-label="Cerrar">✕</button></div>
+    <div class="mp-note"><span id="mpName">—</span><small id="mpOct"></small></div>
+    <div class="mp-tuner"><div class="mp-scale"><i></i><i></i><i></i><i></i><i></i></div><div id="mpNeedle"></div></div>
+    <div class="mp-cents" id="mpCents">Escuchando…</div>
+    <div class="mp-level"><div id="mpLevel"></div></div>
+    <div class="pair mp-modes"><button class="btn" data-m="write">Escribir</button><button class="btn" data-m="tune">Afinador</button></div>
+    <label class="mp-sens">Sensibilidad <input type="range" min="1.5" max="6" step=".5" value="${mic.sens}" id="mpSens"></label>
+    <p class="hint" id="mpHint"></p>`;
+  document.body.appendChild(p);
+  const sync=()=>{ p.querySelectorAll('[data-m=write],[data-m=tune]').forEach(b=>b.classList.toggle('primary', b.dataset.m===mic.mode));
+    $('mpHint').textContent = mic.mode==='write' ? tr('Canta o toca: cada nota estable se escribe con la figura elegida. Para repetir la misma nota, haz una pequeña pausa o un nuevo ataque.') : tr('Afinador: muestra la nota y cuántos cents se aparta, sin escribir nada.'); };
+  p.addEventListener('click', e=>{ const b=e.target.closest('[data-m]'); if(!b) return; if(b.dataset.m==='close') return stopMic();
+    mic.mode=b.dataset.m; settings.micMode=mic.mode; saveSettings(); sync(); });
+  $('mpSens').oninput=e=>{ mic.sens=+e.target.value; settings.micSens=mic.sens; saveSettings(); };
+  sync();
+}
 function micTick(){
-  if(!mic) return; mic.an.getFloatTimeDomainData(mic.buf); const f=detectPitch(mic.buf, AC.sampleRate), now=performance.now();
-  if(f){ const midi=Math.round(69+12*Math.log2(f/440)); mic.quiet=0;
-    if(mic.cand===midi){ if(mic.armed && now-mic.since>200){ mic.armed=false; midiNote(midi); } }
-    else { mic.cand=midi; mic.since=now; }
-    const sp=spell(midi,keyAt(sel?sel.m:0)); $('status').innerHTML=$('mstatus').innerHTML=`🎤 <b>${pname(sp,sp.alt)}</b>${mic.armed?'':' · escrita'}`;
-  } else if(++mic.quiet>3){ mic.armed=true; mic.cand=null; }
+  if(!mic) return; mic.an.getFloatTimeDomainData(mic.buf);
+  const r=yinPitch(mic.buf, AC.sampleRate); mic.ticks++;
+  // calibración: nivel de ruido de la sala durante el primer medio segundo
+  if(mic.ticks<=12){ mic.floor.push(r.rms); if(mic.ticks===12){ const f=mic.floor.sort((a,b)=>a-b)[Math.floor(mic.floor.length/2)]; mic.noise=f; } $('mpCents').textContent=tr('Calibrando el ruido de la sala…'); return; }
+  const thr=Math.max(.0035, (mic.noise||.003)*mic.sens);
+  const lv=$('mpLevel'); if(lv) lv.style.width=Math.min(100, r.rms/thr*35)+'%';
+  const voiced = r.f && r.rms>thr && r.clar>0.82;
+  // ataque: subida brusca de volumen = nota nueva aunque sea la misma altura
+  if(r.rms > Math.max(thr, mic.smooth*2.2) && mic.smooth < thr*2.5) mic.quiet=9;
+  mic.smooth = mic.smooth*.7 + r.rms*.3;
+  if(!voiced){ if(++mic.quiet>=3) mic.hist=[]; if(mic.quiet>=3){ $('mpName').textContent='—'; $('mpOct').textContent=''; $('mpCents').textContent=tr('Escuchando…'); $('mpNeedle').style.left='50%'; } return; }
+  const wasQuiet = mic.quiet>=3; mic.quiet=0;
+  const mf=69+12*Math.log2(r.f/440); mic.hist.push(mf); if(mic.hist.length>7) mic.hist.shift();
+  const med=[...mic.hist].sort((a,b)=>a-b)[mic.hist.length>>1], n=Math.round(med), cents=Math.round((med-n)*100);
+  const sp=spell(n, keyAt(sel?sel.m:0));
+  $('mpName').textContent=pname({step:sp.step,oct:''},sp.alt).replace(/undefined|null/,''); $('mpOct').textContent=sp.oct;
+  $('mpCents').textContent=(cents>0?'+':'')+cents+' cents'; $('mpNeedle').style.left=(50+Math.max(-50,Math.min(50,cents)))+'%';
+  $('mpNeedle').className = Math.abs(cents)<=10? 'ok' : Math.abs(cents)<=25? 'meh' : 'bad';
+  if(mic.mode!=='write') return;
+  if(wasQuiet) mic.fresh=true;
+  const stable = mic.hist.length>=4 && mic.hist.slice(-4).every(x=>Math.abs(x-n)<0.42);
+  if(stable && (mic.fresh || n!==mic.last)){ mic.fresh=false; mic.last=n; midiNote(n); }
 }
 /* ---------- octavas, versiones, ir a compás, maquetación, nombres y colores ---------- */
 function toggleOtt(kind){
@@ -2948,6 +3026,21 @@ No hay acordes que expandir en la selección|Non hai acordes que expandir na sel
 Nada que unir|Nada que unir|Res per unir|Ez dago ezer bateratzeko
 Todo|Todo|Tot|Dena
 compás completo|compás completo|compàs complet|konpasa beteta
+Informe de errores|Informe de erros|Informe d'errors|Erroreen txostena
+Si algo ha fallado, copia este informe y mándamelo junto con lo que estabas haciendo.|Se algo fallou, copia este informe e mándamo xunto co que estabas a facer.|Si alguna cosa ha fallat, copia aquest informe i envia-me'l juntament amb el que estaves fent.|Zerbaitek huts egin badu, kopiatu txosten hau eta bidali egiten ari zinenarekin batera.
+Copiar informe|Copiar informe|Copiar informe|Kopiatu txostena
+Vaciar|Baleirar|Buidar|Hustu
+Informe copiado|Informe copiado|Informe copiat|Txostena kopiatuta
+Ha ocurrido un error: pulsa para ver el informe|Produciuse un erro: preme para ver o informe|S'ha produït un error: prem per veure l'informe|Errore bat gertatu da: sakatu txostena ikusteko
+Versión|Versión|Versió|Bertsioa
+Micrófono|Micrófono|Micròfon|Mikrofonoa
+Escribir|Escribir|Escriure|Idatzi
+Afinador|Afinador|Afinador|Afinagailua
+Sensibilidad|Sensibilidade|Sensibilitat|Sentikortasuna
+Escuchando…|Escoitando…|Escoltant…|Entzuten…
+Calibrando el ruido de la sala…|Calibrando o ruído da sala…|Calibrant el soroll de la sala…|Gelako zarata kalibratzen…
+Canta o toca: cada nota estable se escribe con la figura elegida. Para repetir la misma nota, haz una pequeña pausa o un nuevo ataque.|Canta ou toca: cada nota estable escríbese coa figura escollida. Para repetir a mesma nota, fai unha pequena pausa ou un novo ataque.|Canta o toca: cada nota estable s'escriu amb la figura triada. Per repetir la mateixa nota, fes una petita pausa o un nou atac.|Kantatu edo jo: nota egonkor bakoitza aukeratutako figurarekin idazten da. Nota bera errepikatzeko, egin pausa txiki bat edo eraso berri bat.
+Afinador: muestra la nota y cuántos cents se aparta, sin escribir nada.|Afinador: amosa a nota e cantos cents se afasta, sen escribir nada.|Afinador: mostra la nota i quants cents se n'aparta, sense escriure res.|Afinagailua: nota eta zenbat zentimo aldentzen den erakusten du, ezer idatzi gabe.
 Octava abajo|Oitava abaixo|Octava avall|Zortzidun bat behera
 Octava arriba|Oitava arriba|Octava amunt|Zortzidun bat gora
 Copia este enlace:|Copia esta ligazón:|Copia aquest enllaç:|Kopiatu esteka hau:
@@ -3112,6 +3205,7 @@ tl('mrep',{i:'i-mrep',t:'Repetición de compás (𝄎): repite el anterior',cat:
 tl('styles',{i:'i-pen',t:'Estilo de escritura (grabado o manuscrito)',cat:'Vista',modal:1,run:()=>openStyleDlg()});
 tl('cloud',{i:'i-cloud',t:'Nube: entrar, tus partituras, compartir',cat:'Archivo',modal:1,run:()=>openCloudDlg()});
 tl('lang',{i:'i-globe',t:'Idioma',cat:'Vista',modal:1,run:()=>openLangDlg()});
+tl('errors',{i:'i-help',t:'Informe de errores',cat:'Archivo',modal:1,palOnly:1,run:()=>openErrors()});
 tl('instr',{i:'i-instr',t:'Instrumentos y pentagramas',k:'Ctrl+I',cat:'Partitura',modal:1,run:()=>openInstruments()});
 tl('transp',{i:'i-transpose',t:'Transportar',cat:'Partitura',modal:1,run:()=>openTranspose()});
 tl('page',{i:'i-page',t:'Vista de páginas / continua',cat:'Vista',run:togglePageView,on:()=>view.page});
